@@ -1,0 +1,1 @@
+Hex frame reads a simulation project provided in .proj, .mod, .sim and .bmp files, and transforms it to a .hex simulation project file. It also creates a .fimdesc file, which is required to create .FIM files.
