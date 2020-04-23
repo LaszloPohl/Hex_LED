@@ -10,3 +10,9 @@ The originally uploaded version includes some simulation parameters built into t
 It was not originally planned to publish the source code, so its documentation is not optimal either. Many names and comments are in Hungarian. The source code contains a number of sections that are waiting to be added in the future. Most of these will probably not be completed because a new simulator will be made.
 
 Hex 2 is under construction, which will have a user-friendly interface and source code (planned release around 2025).
+
+Parts of the project:
+- hex_frame: transforms a SUNRED-type simulation description into a hex simulation description.
+- hex_core: do the simulation
+- hexres2fim: converts hex result files to SUNRED result FIM files
+- FIM_extractor: FIM to text converter
