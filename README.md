@@ -12,7 +12,7 @@ It was not originally planned to publish the source code, so its documentation i
 Hex 2 is under construction, which will have a user-friendly interface and source code (planned release around 2025).
 
 Parts of the project:
-- hex_frame: transforms a SUNRED-type simulation description into a hex simulation description.
+- hex_frame: transforms a SUNRED-type simulation description into a hex simulation description
 - hex_core: do the simulation
 - hexres2fim: converts hex result files to SUNRED result FIM files
 - FIM_extractor: FIM to text converter
