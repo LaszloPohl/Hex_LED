@@ -1,0 +1,28 @@
+vsun3-simulation
+name=CoB_2
+field=eltherm
+boundary>electrical open
+boundary>thermal convection=10
+	bou>bottom isothermal=32
+excitation>electrical
+	excit>katod voltage=0.0
+	excit>anod current=0.5
+ambient-temperature=32
+probe=temperature
+	pro>T1 center=36|31|6
+	pro>J  center=36|31|5
+	pro>P1 center=36|31|7
+	pro>P2 center=36|31|8
+	pro>P3 center=36|31|9
+	pro>P4 center=36|31|10
+	pro>P5 center=36|31|11
+	pro>P6 center=36|31|12
+	pro>P7 center=36|31|13
+	pro>P8 center=36|31|14
+	pro>P9 center=36|31|15
+use_commas
+//no_images
+//analysis>dc1 DC
+analysis>ndc1 NDC=300|0.01|0.1
+//analysis>tr1 logtransient=1e-6|9e1|11
+end
