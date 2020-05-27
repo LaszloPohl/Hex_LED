@@ -36,7 +36,7 @@ class akt_sim_adatai {
         value = I0 = max_hiba = Tamb = rvt();
         alfa = rvt(1);
         max_iter = 0;
-        is_uj_fa_kell = is_uj_cellaszerkezet_kell = is_uj_facek_letrehozasa_kell = is_tamb_update_kell = false;
+        is_uj_fa_kell = is_uj_cellaszerkezet_kell = is_uj_cellaszerkezet_elso_kor = is_uj_facek_letrehozasa_kell = is_tamb_update_kell = false;
         is_gerj_update_kell = is_del_all_prev = is_del_all_fa = is_peremfelt_update_kell = is_force_face_update = false;
         is_subiter_dt_changed = is_iter_dt_csokkento = false;
         fa_adat = fat_double;
@@ -54,14 +54,14 @@ class akt_sim_adatai {
         tipus = alt_dc;
         value = rvt();
         alfa = rvt(1);
-        is_uj_fa_kell = is_uj_cellaszerkezet_kell = is_uj_facek_letrehozasa_kell = is_tamb_update_kell = false;
+        is_uj_fa_kell = is_uj_cellaszerkezet_kell = is_uj_cellaszerkezet_elso_kor = is_uj_facek_letrehozasa_kell = is_tamb_update_kell = false;
         is_gerj_update_kell = is_del_all_prev = is_del_all_fa = is_peremfelt_update_kell = is_force_face_update = false;
         is_subiter_dt_changed = is_iter_dt_csokkento = false;
     }
     //***********************************************************************
     void clear_for_uj_iteracio() {
     //***********************************************************************
-        is_uj_fa_kell = is_uj_cellaszerkezet_kell = is_uj_facek_letrehozasa_kell = is_tamb_update_kell = false;
+        is_uj_fa_kell = is_uj_cellaszerkezet_kell = is_uj_cellaszerkezet_elso_kor = is_uj_facek_letrehozasa_kell = is_tamb_update_kell = false;
         is_gerj_update_kell = is_del_all_prev = is_del_all_fa = is_peremfelt_update_kell = is_force_face_update = false;
         is_subiter_dt_changed = is_iter_dt_csokkento = false;
     }
@@ -112,6 +112,7 @@ public:
     uns max_iter;
     bool is_uj_fa_kell;                     // vezérlõ, cella és redukcios_fa figyeli
     bool is_uj_cellaszerkezet_kell;         // vezérlõ és cella figyeli
+    bool is_uj_cellaszerkezet_elso_kor;     // vezérlõõ figyeli, uj_cellaszerkezet esetén kétszer kell futtatni a pre_cellafeldolgozást, elsõ körben csak foglalunk. (Sugárkövetés elszállt, mert nem létezõ cellákat címeztünk.)
     bool is_uj_facek_letrehozasa_kell;      // cella figyeli
     bool is_tamb_update_kell;               // vezerlo és cella figyeli, cellánál update-elni kell mindent és is_del_all_prev is legyen
     bool is_gerj_update_kell;               // cella figyeli, a gerjesztést tartalmazó face-t kell újragyártani

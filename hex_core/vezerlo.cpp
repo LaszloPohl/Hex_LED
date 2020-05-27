@@ -439,6 +439,11 @@ bool vezerlo::run_20_start_next_step() {
     // pre cella klaszterek indítása
 
     sumhiba_tipus kezdo_hiba;
+    if (akt_sim.is_uj_cellaszerkezet_kell) {
+        akt_sim.is_uj_cellaszerkezet_elso_kor = true;
+        run_pre_threads(kezdo_hiba, akt_sim.p_akt_sim->cella_klaszter_tartomanyok);
+        akt_sim.is_uj_cellaszerkezet_elso_kor = false;
+    }
     run_pre_threads(kezdo_hiba, akt_sim.p_akt_sim->cella_klaszter_tartomanyok);
 
 /*

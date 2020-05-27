@@ -269,30 +269,33 @@ void run_cellafeldolgozo_klaszter(szal_feladat_adatai * padat) {
     else { // dc + transi
 
         // elõkészítés, ha ez ûj lépés
-
         rvt max_abs_Uc = rvt(), max_abs_Tc = rvt();
         if (padat->altipus == szat_pre) {
             if (akt_sim.is_uj_cellaszerkezet_kell) {
-                for (uns i = padat->klaszter_kezdoindex; i <= padat->klaszter_utolso_index; i++) {
-                    os_cella ** pp_cella = &cellak.unsafe(i);
-                    if (*pp_cella == nullptr) { // létrehozzuk a cellát
-                        if (akt_sim.p_akt_sim->cellak.unsafe(i).cella_tipus == ct_faces_cella) {
-                            *pp_cella = new faces_cella;
+                if (akt_sim.is_uj_cellaszerkezet_elso_kor) { // elsõ körben csak foglalunk
+                    for (uns i = padat->klaszter_kezdoindex; i <= padat->klaszter_utolso_index; i++) {
+                        os_cella ** pp_cella = &cellak.unsafe(i);
+                        if (*pp_cella == nullptr) { // létrehozzuk a cellát
+                            if (akt_sim.p_akt_sim->cellak.unsafe(i).cella_tipus == ct_faces_cella) {
+                                *pp_cella = new faces_cella;
+                            }
+                            else
+                                TODO("run_cellafeldolgozo_klaszter => new");
                         }
-                        else
-                            TODO("run_cellafeldolgozo_klaszter => new");
+                        (*pp_cella)->pre_init(i);
                     }
-                    (*pp_cella)->pre_init(i);
+                    for (uns i = padat->klaszter_kezdoindex; i <= padat->klaszter_utolso_index; i++) {
+                        os_cella & akt_cella = *cellak.unsafe(i);
+                        akt_cella.init_dc(); // nem kell törölni a prev-et, mert a vezérlõ set_size-ot hívott, ami mindent törölt. Hívja a resize matrixokat.
+                        akt_cella.halozat_foglalas_cellaban_dc();
+                        akt_cella.peremfeltetel_update_dc();
+                        akt_cella.gerj_update_dc();
+                        akt_cella.update_for_uj_lepes_dc();
+                        akt_cella.set_is_szimm();
+                    }
+                    return;
                 }
-                for (uns i = padat->klaszter_kezdoindex; i <= padat->klaszter_utolso_index; i++) {
-                    os_cella & akt_cella = *cellak.unsafe(i);
-                    akt_cella.init_dc(); // nem kell törölni a prev-et, mert a vezérlõ set_size-ot hívott, ami mindent törölt. Hívja a resize matrixokat.
-                    akt_cella.halozat_foglalas_cellaban_dc();
-                    akt_cella.peremfeltetel_update_dc();
-                    akt_cella.gerj_update_dc();
-                    akt_cella.update_for_uj_lepes_dc();
-                    akt_cella.set_is_szimm();
-                }
+                // else: második körben megy tovább a run_cellafeldolgozo_klaszter
             }
             else { // ha nem kell új cellaszerkezet, de új lépés
                 for (uns i = padat->klaszter_kezdoindex; i <= padat->klaszter_utolso_index; i++) {
@@ -392,6 +395,8 @@ void run_cellafeldolgozo_klaszter(szal_feladat_adatai * padat) {
 
         for (uns i = padat->klaszter_kezdoindex; i <= padat->klaszter_utolso_index; i++) {
             os_cella & akt_cella = *cellak.unsafe(i);
+            if (cellak.unsafe(i) == nullptr)
+                printf("\nNULLPTR\n");
             akt_cella.cella_klaszter_4_agaramok_szamitasa_dc();
         }
 
@@ -1034,7 +1039,7 @@ void szalfuttato_fuggveny(szal_tipus mit_futtat) {
         dummy.beallitas_szaltorleshez(mit_futtat);
         feldolgozo.betesz(dummy, false); // betesz mégegyet, hogy a következõ szálat is kinyírja
     }
-    catch (hiba h) {
+    catch (const hiba & h) {
         printf("\n%s\n", h.what());
         abort();
     }

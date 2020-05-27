@@ -606,6 +606,7 @@ void adat_szimulacio::beolvas_fajlbol(uns hanyas, adat_szimulacio * elozo, uns c
 #ifdef _DEBUG
         cellatartomany_feltolto(cella_klaszter_tartomanyok, 1);
 #else
+printf("\n cellatartomany_feltolto cputhreads:%u\n", cputhreads);
         cellatartomany_feltolto(cella_klaszter_tartomanyok, cputhreads);
 #endif
         log_print::log_print(1, "cells data read: OK                  \n");
