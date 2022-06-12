@@ -688,7 +688,7 @@ void sim_adatok::build(const fimdesc & desc, const hexres & res) {
     for (uns i = 0; i < desc.z; i++)
         for (uns j = 0; j < desc.y; j++)
             for (uns k = 0; k < desc.x; k++) {
-                el.map.getref(k, j, i) = /*0;*/el_filler[i];
+                el.map.getref(k, j, i) = 0* /*0;*/el_filler[i];
                 th.map.getref(k, j, i) = /*i>9 || i<8 ? (i==15?60:40) : */th_filler[i];
             }
     ertek_index = 0;
@@ -700,7 +700,7 @@ void sim_adatok::build(const fimdesc & desc, const hexres & res) {
         if (desc.cellak[i].is_th) {
             float T = res.dc_ertekek[ertek_index++];
             //T = T < 40 ? 40 : T;
-            if (desc.cellak[i].z < 6)T = 32;
+            //if (desc.cellak[i].z < 6)T = 32;
             th.map.getref(desc.cellak[i].x, desc.cellak[i].y, desc.cellak[i].z) = /*desc.cellak[i].z>9|| desc.cellak[i].z<8 ? 40 : */T;
             is_th = true;
         }
