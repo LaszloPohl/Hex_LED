@@ -1986,6 +1986,74 @@ void apa::build_modell_fa(simulation & aktSim){
 
 
 //***********************************************************************
+void t_modell_face_adat::addSideToCurrentProbe(v6eredm& eredm, uns cella_index) const{
+//***********************************************************************
+    if (belso_facek.size() > 0) {
+        for (uns y = 0; y < belso_facek.y_size(); y++)
+            for (uns x = 0; x < belso_facek.x_size(); x++)
+                belso_facek.getconstref(x, y).addSideToCurrentProbe(eredm, cella_index);
+    }
+    else {
+        if (cella_index != 0) {
+            if (face_index_el != 0)
+                eredm.elCurrentProbe.add(v6eredm::CurrIndex(cella_index, face_index_el));
+            if (face_index_th != 0)
+                eredm.thCurrentProbe.add(v6eredm::CurrIndex(cella_index, face_index_th));
+        }
+    }
+}
+
+
+//***********************************************************************
+void t_modell_cella::addSideToCurrentProbe(v6eredm& eredm, Oldal oldal) const{
+//***********************************************************************
+    if (belso_cellak.size() > 0) {
+        switch (oldal) {
+            case WEST: {
+                for (uns z = 0; z < belso_cellak.z_size(); z++)
+                    for (uns y = 0; y < belso_cellak.y_size(); y++)
+                        belso_cellak.getconstref(0, y, z).addSideToCurrentProbe(eredm, oldal);
+                }
+                break;
+            case EAST: {
+                for (uns z = 0; z < belso_cellak.z_size(); z++)
+                    for (uns y = 0; y < belso_cellak.y_size(); y++)
+                        belso_cellak.getconstref(belso_cellak.x_size() - 1, y, z).addSideToCurrentProbe(eredm, oldal);
+                }
+                break;
+            case SOUTH: {
+                for (uns z = 0; z < belso_cellak.z_size(); z++)
+                    for (uns x = 0; x < belso_cellak.x_size(); x++)
+                        belso_cellak.getconstref(x, 0, z).addSideToCurrentProbe(eredm, oldal);
+                }
+                break;
+            case NORTH: {
+                for (uns z = 0; z < belso_cellak.z_size(); z++)
+                    for (uns x = 0; x < belso_cellak.x_size(); x++)
+                        belso_cellak.getconstref(x, belso_cellak.y_size() - 1, z).addSideToCurrentProbe(eredm, oldal);
+                }
+                break;
+            case BOTTOM: {
+                for (uns y = 0; y < belso_cellak.y_size(); y++)
+                    for (uns x = 0; x < belso_cellak.x_size(); x++)
+                        belso_cellak.getconstref(x, y, 0).addSideToCurrentProbe(eredm, oldal);
+                }
+                break;
+            case TOP: {
+                for (uns y = 0; y < belso_cellak.y_size(); y++)
+                    for (uns x = 0; x < belso_cellak.x_size(); x++)
+                        belso_cellak.getconstref(x, y, belso_cellak.z_size() - 1).addSideToCurrentProbe(eredm, oldal);
+                }
+                break;
+        }
+    }
+    else {
+        face_adat[oldal].addSideToCurrentProbe(eredm, cella_index);
+    }
+}
+
+
+//***********************************************************************
 void apa::build_analizisek(simulation & aktSim){
 //***********************************************************************
     aktAnalizisek.clear();
@@ -1993,7 +2061,7 @@ void apa::build_analizisek(simulation & aktSim){
         v6anal aktAnal;
         const analysis & anal = aktSim.tanal[i];
         if (aktAnalizisek.size() == 0) {
-            aktAnal.maxiter = 100;
+            aktAnal.maxiter = 50; // 100-ról
             aktAnal.maxhiba = 1e-4;
             aktAnal.I0 = 0.1;
             
@@ -2072,6 +2140,132 @@ void apa::build_analizisek(simulation & aktSim){
                 }
                 if(!megvan)
                     aktAnal.eredm.add(eredm);
+            }
+            // áram probe-ok
+            const color * tcolor = aktSim.pmodel->tcolor;
+            for (uns j = 0; j < aktSim.tproC.size(); j++) {
+                const probeT& akt_probe = aktSim.tproC[j];
+                v6eredm eredm;
+                eredm.eredm_fajta = 'C';
+                if (akt_probe.current_type == 0) { // 0=color
+                    uns color_index = tcolor[akt_probe.x].index;
+                    for (uns z = 0; z < modell_racs.z_size(); z++) {
+                        for (uns y = 0; y < modell_racs.y_size(); y++) {
+                            for (uns x = 0; x < modell_racs.x_size(); x++) {
+                                const t_modell_cella & akt_cella = modell_racs.getconstref(x, y, z);
+                                if (akt_cella.is_cella && akt_cella.color_index == color_index) { // ilyen cellát keresünk
+                                    if (x == 0 || !modell_racs.getconstref(x - 1, y, z).is_cella || modell_racs.getconstref(x - 1, y, z).color_index != color_index)
+                                        akt_cella.addSideToCurrentProbe(eredm, WEST);
+                                    if (x == modell_racs.x_size() - 1 || !modell_racs.getconstref(x + 1, y, z).is_cella || modell_racs.getconstref(x + 1, y, z).color_index != color_index)
+                                        akt_cella.addSideToCurrentProbe(eredm, EAST);
+                                    if (y == 0 || !modell_racs.getconstref(x, y - 1, z).is_cella || modell_racs.getconstref(x, y - 1, z).color_index != color_index)
+                                        akt_cella.addSideToCurrentProbe(eredm, SOUTH);
+                                    if (y == modell_racs.y_size() - 1 || !modell_racs.getconstref(x, y + 1, z).is_cella || modell_racs.getconstref(x, y + 1, z).color_index != color_index)
+                                        akt_cella.addSideToCurrentProbe(eredm, NORTH);
+                                    if (z == 0 || !modell_racs.getconstref(x, y, z - 1).is_cella || modell_racs.getconstref(x, y, z - 1).color_index != color_index)
+                                        akt_cella.addSideToCurrentProbe(eredm, BOTTOM);
+                                    if (z == modell_racs.z_size() - 1 || !modell_racs.getconstref(x, y, z + 1).is_cella || modell_racs.getconstref(x, y, z + 1).color_index != color_index)
+                                        akt_cella.addSideToCurrentProbe(eredm, TOP);
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (akt_probe.current_type == 1) { // 1=volume
+                    for (uns z = akt_probe.z; z <= akt_probe.z2; z++) {
+                        for (uns y = akt_probe.y; y <= akt_probe.y2; y++) {
+                            for (uns x = akt_probe.x; x <= akt_probe.x2; x++) {
+                                const t_modell_cella& akt_cella = modell_racs.getconstref(x, y, z);
+                                if (akt_cella.is_cella) {
+                                    if (x == akt_probe.x  || !modell_racs.getconstref(x - 1, y, z).is_cella)
+                                        akt_cella.addSideToCurrentProbe(eredm, WEST);
+                                    if (x == akt_probe.x2 || !modell_racs.getconstref(x + 1, y, z).is_cella)
+                                        akt_cella.addSideToCurrentProbe(eredm, EAST);
+                                    if (y == akt_probe.y  || !modell_racs.getconstref(x, y - 1, z).is_cella)
+                                        akt_cella.addSideToCurrentProbe(eredm, SOUTH);
+                                    if (y == akt_probe.y2 || !modell_racs.getconstref(x, y + 1, z).is_cella)
+                                        akt_cella.addSideToCurrentProbe(eredm, NORTH);
+                                    if (z == akt_probe.z  || !modell_racs.getconstref(x, y, z - 1).is_cella)
+                                        akt_cella.addSideToCurrentProbe(eredm, BOTTOM);
+                                    if (z == akt_probe.z2 || !modell_racs.getconstref(x, y, z + 1).is_cella)
+                                        akt_cella.addSideToCurrentProbe(eredm, TOP);
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (akt_probe.current_type == 2) { // 2=side
+                    switch (akt_probe.oldal) {
+                        case WEST: {
+                            for (uns z = akt_probe.z; z <= akt_probe.z2; z++) {
+                                for (uns y = akt_probe.y; y <= akt_probe.y2; y++) {
+                                    const t_modell_cella& akt_cella = modell_racs.getconstref(akt_probe.x, y, z);
+                                    if (akt_cella.is_cella) {
+                                        akt_cella.addSideToCurrentProbe(eredm, WEST);
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                        case EAST: {
+                            for (uns z = akt_probe.z; z <= akt_probe.z2; z++) {
+                                for (uns y = akt_probe.y; y <= akt_probe.y2; y++) {
+                                    const t_modell_cella& akt_cella = modell_racs.getconstref(akt_probe.x2, y, z);
+                                    if (akt_cella.is_cella) {
+                                        akt_cella.addSideToCurrentProbe(eredm, EAST);
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                        case SOUTH: {
+                            for (uns z = akt_probe.z; z <= akt_probe.z2; z++) {
+                                for (uns x = akt_probe.x; x <= akt_probe.x2; x++) {
+                                    const t_modell_cella& akt_cella = modell_racs.getconstref(x, akt_probe.y, z);
+                                    if (akt_cella.is_cella) {
+                                        akt_cella.addSideToCurrentProbe(eredm, SOUTH);
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                        case NORTH: {
+                            for (uns z = akt_probe.z; z <= akt_probe.z2; z++) {
+                                for (uns x = akt_probe.x; x <= akt_probe.x2; x++) {
+                                    const t_modell_cella& akt_cella = modell_racs.getconstref(x, akt_probe.y2, z);
+                                    if (akt_cella.is_cella) {
+                                        akt_cella.addSideToCurrentProbe(eredm, NORTH);
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                        case BOTTOM: {
+                            for (uns y = akt_probe.y; y <= akt_probe.y2; y++) {
+                                for (uns x = akt_probe.x; x <= akt_probe.x2; x++) {
+                                    const t_modell_cella& akt_cella = modell_racs.getconstref(x, y, akt_probe.z);
+                                    if (akt_cella.is_cella) {
+                                        akt_cella.addSideToCurrentProbe(eredm, BOTTOM);
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                        case TOP: {
+                            for (uns y = akt_probe.y; y <= akt_probe.y2; y++) {
+                                for (uns x = akt_probe.x; x <= akt_probe.x2; x++) {
+                                    const t_modell_cella& akt_cella = modell_racs.getconstref(x, y, akt_probe.z2);
+                                    if (akt_cella.is_cella) {
+                                        akt_cella.addSideToCurrentProbe(eredm, TOP);
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+                else throw hiba("apa::build_analizisek", "program error: unknown current probe type (%u)", akt_probe.current_type);
+                aktAnal.eredm.add(eredm);
             }
             if (!aktSim.is_nofim) {
                 v6eredm eredm;
@@ -2240,6 +2434,16 @@ void apa::write_analizisek(FILE * fp, simulation & aktSim, uns junction_db){
                         if (junction_db > 0 && er.probe_map_fajta != 'R')
                             fprintf(fp, "RMCR\n");
                         break;
+                    case 'C':
+                        fprintf(fp, "RC%u;", er.elCurrentProbe.size());
+                        for (uns k = 0; k < er.elCurrentProbe.size(); k++)
+                            fprintf(fp, "%uF%u;", er.elCurrentProbe[k].cella_index, er.elCurrentProbe[k].face_index);
+                        fprintf(fp, "\n");
+                        fprintf(fp, "RC%u;", er.thCurrentProbe.size());
+                        for (uns k = 0; k < er.thCurrentProbe.size(); k++)
+                            fprintf(fp, "%uF%u;", er.thCurrentProbe[k].cella_index, er.thCurrentProbe[k].face_index);
+                        fprintf(fp, "\n");
+                        break;
                 }
             }
         }
@@ -2398,7 +2602,7 @@ void apa::index_and_write_elemi_cells(FILE *fp, simulation & aktSim, uns cellasz
 
     uns dir_mode = 0; // egyféle mód megengedett az egész modellben. Ha több van, az elsõt veszi figyelembe.
     uns ray_per_cell_dir = 1;
-    bool is_sarga_szetmegy; // vannak-e külön sárga sugarak
+    bool is_sarga_szetmegy = false; // vannak-e külön sárga sugarak
     char output_side = 'T';
     dbl cut_level = 0;
     dbl d_light_powder = 0;
@@ -2462,8 +2666,10 @@ void apa::index_and_write_elemi_cells(FILE *fp, simulation & aktSim, uns cellasz
     // => vigyázz, a dir_mode-ot is az nézi meg.
 
     vezetes_tomb_tipus vt;
+    dbl kek_ki = 0;
+    dbl sarga_ki = 0;
+    uns junction_layer = 0;
     if (dir_mode > 0) {
-        uns junction_layer = 0;
         for (uns z = 1; z < z_res; z++)
             if (db_junction[z]>db_junction[junction_layer])
                 junction_layer = z;
@@ -2478,8 +2684,6 @@ void apa::index_and_write_elemi_cells(FILE *fp, simulation & aktSim, uns cellasz
                 d_light_powder = junction_layer == 0 ? 0 : teto - legalso_fenypor;
             }
         }
-        dbl kek_ki = 0;
-        dbl sarga_ki = 0;
         if (pmat != nullptr) {
             dbl alfa_blue = pmat->light_blue_absorption_coeff.get_ertek(50);
             dbl alfa_yellow = pmat->light_yellow_absorption_coeff.get_ertek(50);
@@ -2490,9 +2694,9 @@ void apa::index_and_write_elemi_cells(FILE *fp, simulation & aktSim, uns cellasz
             dbl sarga_re = (1 - sarga_arany)*eta_re;
             sarga_ki = sarga_arany + sarga_re;
         }
-        sugar_feldolgozo.build_and_write(aktSim, modell_racs, dir_mode, output_side, ray_per_cell_dir, is_sarga_szetmegy,
-            cut_level, d_light_powder, top_sugarzo >= bottom_sugarzo, junction_layer, fp, vt, kek_ki, sarga_ki, yellow_correction);
     }
+    sugar_feldolgozo.build_and_write(aktSim, modell_racs, dir_mode, output_side, ray_per_cell_dir, is_sarga_szetmegy,
+        cut_level, d_light_powder, top_sugarzo >= bottom_sugarzo, junction_layer, fp, vt, kek_ki, sarga_ki, yellow_correction);
 
     // fényút tulajdonságok
 
@@ -5650,6 +5854,7 @@ void simulation::read(PLString path){
         }
         tproV.clear();
         tproT.clear();
+        tproC.clear();
         while(az==az_probe){
             const PLString kisb=fajl.lines()[i][1].LowCase();
             ProbeTipus pr;
@@ -5681,30 +5886,46 @@ void simulation::read(PLString path){
                     PLString aktpar=fajl.lines()[i][2].LowCase();
                     if(pr==ProbeV||pr==ProbeT||pr==ProbeC||pr==ProbeM){
                         Oldal dal;
-                        if(aktpar=="center")dal=CENTER;
+                        uns curr_typ = 2;
+                        if (aktpar == "center") { dal = CENTER; curr_typ = 1; }
                         else if(aktpar=="west")dal=WEST;
                         else if(aktpar=="east")dal=EAST;
                         else if(aktpar=="south")dal=SOUTH;
                         else if(aktpar=="north")dal=NORTH;
                         else if(aktpar=="top")dal=TOP;
                         else if(aktpar=="bottom")dal=BOTTOM;
+                        else if (aktpar == "volume") { dal = CENTER; curr_typ = 1; }
+                        else if (aktpar == "color") { dal = CENTER; curr_typ = 0; }
                         else throw hiba(fvnev,"unknown probe place (%s) in line %u in %s (center, west, etc. needed)",fajl.lines()[i][2].c_str(),i,fileName.c_str());
                         if(pr==ProbeV){
                             tproV[aktindex].oldal=dal;
                             if(!fajl.lines()[i][3].to3uns(tproV[aktindex].x,tproV[aktindex].y,tproV[aktindex].z))
-                                throw hiba(fvnev,"bad probe valuse (%s) in line %u in %s",fajl.lines()[i][3].c_str(),i,fileName.c_str());
+                                throw hiba(fvnev,"bad probe value (%s) in line %u in %s",fajl.lines()[i][3].c_str(),i,fileName.c_str());
                         }
                         else if(pr==ProbeT){
                             tproT[aktindex].oldal=dal;
                             if(!fajl.lines()[i][3].to3uns(tproT[aktindex].x,tproT[aktindex].y,tproT[aktindex].z))
-                                throw hiba(fvnev,"bad probe valuse (%s) in line %u in %s",fajl.lines()[i][3].c_str(),i,fileName.c_str());
+                                throw hiba(fvnev,"bad probe value (%s) in line %u in %s",fajl.lines()[i][3].c_str(),i,fileName.c_str());
                         }
                         else if(pr==ProbeC){
                             tproC[aktindex].oldal=dal;
-                            if(!fajl.lines()[i][3].to3uns(tproC[aktindex].x,tproC[aktindex].y,tproC[aktindex].z))
-                                throw hiba(fvnev,"bad probe valuse (%s) in line %u in %s",fajl.lines()[i][3].c_str(),i,fileName.c_str());
-                            if(!fajl.lines()[i][4].to3uns(tproC[aktindex].x2,tproC[aktindex].y2,tproC[aktindex].z2))
-                                throw hiba(fvnev,"bad probe valuse (%s) in line %u in %s",fajl.lines()[i][4].c_str(),i,fileName.c_str());
+                            tproC[aktindex].current_type = curr_typ;
+                            if (curr_typ == 0) {
+                                if (!fajl.lines()[i][3].tounsigned(tproC[aktindex].x))
+                                    throw hiba(fvnev, "bad probe value (%s) in line %u in %s", fajl.lines()[i][3].c_str(), i, fileName.c_str());
+                            }
+                            else {
+                                if (!fajl.lines()[i][3].to3uns(tproC[aktindex].x, tproC[aktindex].y, tproC[aktindex].z))
+                                    throw hiba(fvnev, "bad probe value (%s) in line %u in %s", fajl.lines()[i][3].c_str(), i, fileName.c_str());
+                                if (!fajl.lines()[i][4].to3uns(tproC[aktindex].x2, tproC[aktindex].y2, tproC[aktindex].z2))
+                                    throw hiba(fvnev, "bad probe value (%s) in line %u in %s", fajl.lines()[i][4].c_str(), i, fileName.c_str());
+                                if(tproC[aktindex].x >= pmodel->x_res || tproC[aktindex].x2 >= pmodel->x_res || tproC[aktindex].y >= pmodel->y_res 
+                                    || tproC[aktindex].y2 >= pmodel->y_res || tproC[aktindex].z >= pmodel->z_res || tproC[aktindex].z2 >= pmodel->z_res)
+                                    throw hiba(fvnev, "bad probe coordinate (%s %s) in line %u in %s", fajl.lines()[i][3].c_str(), fajl.lines()[i][4].c_str(), i, fileName.c_str());
+                                if (tproC[aktindex].x > tproC[aktindex].x2) { uns temp = tproC[aktindex].x; tproC[aktindex].x = tproC[aktindex].x2; tproC[aktindex].x2 = temp; }
+                                if (tproC[aktindex].y > tproC[aktindex].y2) { uns temp = tproC[aktindex].y; tproC[aktindex].y = tproC[aktindex].y2; tproC[aktindex].y2 = temp; }
+                                if (tproC[aktindex].z > tproC[aktindex].z2) { uns temp = tproC[aktindex].z; tproC[aktindex].z = tproC[aktindex].z2; tproC[aktindex].z2 = temp; }
+                            }
                         }
                         else if(pr==ProbeM){
                             tproM[aktindex].oldal=dal;
@@ -6077,7 +6298,12 @@ void red_fa::write_tree(FILE * fp, red_fa * gy){
     }
     else{ // belsõ csomópont
         fprintf(fp, "BF%uF%uL%uR%u\n", gy->index, gy->blokk_kezdo_index, gy->bal->index, gy->jobb->index);
-        fprintf(fp, "NM%uA%uB%u\n", gy->mit_hova.size() + 1, gy->mit_hova.size() > 0 ? gy->mit_hova.getLast().hova + gy->mit_hova.getLast().hanyat : 0, gy->kozos_db); // A közös miatt a +1
+        if (gy->kozos_db == 0) {
+            fprintf(fp, "NM%uA%uB%u\n", gy->mit_hova.size() + 1, gy->mit_hova.size() > 0 ? gy->mit_hova.getLast().hova + gy->mit_hova.getLast().hanyat : 0, gy->kozos_db); // A közös miatt a +1
+        }
+        else {
+            fprintf(fp, "NM%uA%uB%u\n", gy->mit_hova.size() + 1, gy->mit_hova.size() > 0 ? gy->mit_hova.getLast().hova + gy->mit_hova.getLast().hanyat : 0, gy->kozos_db); // A közös miatt a +1
+        }
         fprintf(fp, "B0E%uK%uN%u\n", gy->kozos_be1, gy->kozos_be2, gy->kozos_db);
         for (uns i = 0; i < gy->mit_hova.size(); i++)
             fprintf(fp, "A%u%c%uN%u\n", gy->mit_hova[i].hova, (gy->mit_hova[i].is_be1 ? 'E' : 'K'), gy->mit_hova[i].honnan, gy->mit_hova[i].hanyat);

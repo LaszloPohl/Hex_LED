@@ -88,6 +88,7 @@ struct GTpar{
 
 //***********************************************************************
 struct material;
+struct v6eredm;
 //***********************************************************************
 
 
@@ -682,6 +683,7 @@ struct probeT{
     Oldal oldal;                // Oldal: WEST=1,EAST=2,SOUTH=3,NORTH=4,BOTTOM=5,TOP=6,CENTER=19
     uns x,y,z;                  // uns, map esetén x=0..2, ahol 0=x, 1=y, 2=z, az érték pedig y-ba kerül
     uns x2,y2,z2;               // uns
+    uns current_type;           // uns, if current probe => 0=color, 1=volume, 2=side
 };
 
 
@@ -996,6 +998,7 @@ struct t_modell_face_adat {
     void write_face(FILE *fp, bool is_el, bool is_th, uns & start_face_index, meret_tomb_tipus & meret_tomb, uns cella_anyag_index, uns cella_tipus);
     uns facetipus_azonosito(bool is_el, bool is_th, uns cella_anyag_index);
     void set_face_indexek(bool is_el, bool is_th, uns & start_face_index);
+    void addSideToCurrentProbe(v6eredm& eredm, uns cella_index) const;
 };
 
 
@@ -1005,7 +1008,6 @@ struct ketpont {
     dbl x0, x1, y0, y1, z0, z1;
     ketpont() :x0{ 0 }, x1{ 0 }, y0{ 0 }, y1{ 0 }, z0{ 0 }, z1{ 0 } {}
 };
-
 
 //***********************************************************************
 struct t_modell_cella {
@@ -1090,6 +1092,7 @@ struct t_modell_cella {
     }
     void write_cella(FILE *fp, FILE *descfp, meret_tomb_tipus & meret_tomb, uns cx, uns cy, uns cz); // ha tényleg cella, kiírja magát
     void set_face_indexek();
+    void addSideToCurrentProbe(v6eredm& eredm, Oldal oldal) const;
 private:
     uns write_faces(FILE *fp, meret_tomb_tipus & meret_tomb, uns cella_tipus); // a write_cella hívja
     uns cellatipus_azonosito(); // a write_cella hívja
@@ -1153,10 +1156,17 @@ struct v6gerj {
 //***********************************************************************
 struct v6eredm {
 //***********************************************************************
-    char eredm_fajta;           // 'P' vagy 'M'
+    struct CurrIndex {
+        uns cella_index;
+        uns face_index;
+        CurrIndex(uns ci = 0, uns fi = 0) :cella_index{ ci }, face_index{ fi }{}
+    };
+    char eredm_fajta;           // 'P' vagy 'M' vagy 'C'
     char probe_map_fajta;       // 'E', 'T', 'F', 'I', 'L', 'R'
     uns probe_cella_index;      // hányas cella
     uns probe_face_index;       // ha 'F' a probe, akkor a face indexe
+    tomb<CurrIndex> elCurrentProbe; // faces of the electrical current probe if this is a current probe
+    tomb<CurrIndex> thCurrentProbe; // faces of the thermal current probe if this is a current probe
     v6eredm() {}
 };
 
