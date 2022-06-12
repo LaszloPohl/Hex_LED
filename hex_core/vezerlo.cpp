@@ -26,6 +26,9 @@ redukcios_fa<::std::complex<float>, true>  acfa_f;
 redukcios_fa<::std::complex<double>, true> acfa_d;
 vektor<os_cella*> cellak; // a 0 indexû dummy!
 vektor<rvt> csatlakozo_aramok_dc; // a 0 indexû dummy!
+vektor<iter_csomopont> iter_csomopontok_dc; // a 0 indexû dummy!
+iter_solver<float> dc_itsolver_f;
+iter_solver<double> dc_itsolver_d;
 Para_engine feldolgozo;
 //***********************************************************************
 //***********************************************************************
@@ -45,6 +48,7 @@ void vezerlo::set_ossz_lepesszam(){
 //***********************************************************************
 void vezerlo::run_fw_threads(uns akt_fa, fa_adat_tipus akt_fa_tipus){
 //***********************************************************************
+//printf("fw_1\n");
     szal_feladat_adatai fw_klaszter_sablon, fw_egyedi_sablon;
     fw_klaszter_sablon.beallitas_fw_klaszternek();
     fw_egyedi_sablon.beallitas_fw_egyedinek();
@@ -59,7 +63,8 @@ void vezerlo::run_fw_threads(uns akt_fa, fa_adat_tipus akt_fa_tipus){
         ? akt_sim.p_akt_sim->fa_klaszter_tartomanyok_1
         : akt_sim.p_akt_sim->fa_klaszter_tartomanyok_2;
 
-    for (uns szal_index = 0; szal_index < kt.size(); szal_index++) {
+// printf("fw_2\n");
+   for (uns szal_index = 0; szal_index < kt.size(); szal_index++) {
         fw_klaszter_sablon.set_fa_kezdoindex_es_utolso_index(
             kt.unsafe(szal_index).klaszter_kezdoindex,
             kt.unsafe(szal_index).klaszter_utolso_index,
@@ -77,7 +82,13 @@ void vezerlo::run_fw_threads(uns akt_fa, fa_adat_tipus akt_fa_tipus){
         ? akt_sim.p_akt_sim->egyedi_fa_elemek_1
         : akt_sim.p_akt_sim->egyedi_fa_elemek_2;
 
-    for (uns szal_index = 0; szal_index < efe.size(); szal_index++) {
+//printf("fw_4\n");
+    feldolgozo.var_mig_van_varo_vagy_futo_feladat(szt_fw_klaszter);
+//printf("fw_5\n");
+    feldolgozo.torli_a_keszeket(szt_fw_klaszter);
+
+//printf("fw_3\n");
+   for (uns szal_index = 0; szal_index < efe.size(); szal_index++) {
         fw_egyedi_sablon.set_fa_kezdoindex_es_utolso_index(
             efe.unsafe(szal_index).index,
             efe.unsafe(szal_index).index,
@@ -89,10 +100,11 @@ void vezerlo::run_fw_threads(uns akt_fa, fa_adat_tipus akt_fa_tipus){
 
     // vár a fw végére
 
-    feldolgozo.var_mig_van_varo_vagy_futo_feladat(szt_fw_klaszter);
-    feldolgozo.torli_a_keszeket(szt_fw_klaszter);
+//printf("fw_6\n");
     feldolgozo.var_mig_van_varo_vagy_futo_feladat(szt_fw_egyedi);
+//printf("fw_7\n");
     feldolgozo.torli_a_keszeket(szt_fw_egyedi);
+//printf("fw_8\n");
 }
 
 
@@ -174,6 +186,7 @@ void vezerlo::run_step_settings(){
             cellak.unsafe(i) = nullptr;
         csatlakozo_aramok_dc.set_size(akt_sim.p_akt_sim->csatlakozo_db + 1);
         csatlakozo_aramok_dc.zero();
+        iter_csomopontok_dc.set_size(akt_sim.p_akt_sim->csatlakozo_db / 2 + 1);
         // A pre_init hívása átkerült a cellaklaszterbe => nem lehet olyan face, amelyiknek a párja másik cellaklaszterben van! (Ettõl több helyen függ a helyes mûködés.)
     }
 
@@ -325,48 +338,66 @@ void vezerlo::debug_write(const char * fajlnev){
     }
 }
 
-#define JUNCTION_PRECALC
+//#define JUNCTION_PRECALC
 
 //***********************************************************************
 void vezerlo::run_simulation/*_darabokbol*/() {
 //***********************************************************************
+//printf("sim_1\n");
     run_10_elokeszites();
 //    uns maxlepes = 500;
+    bool is_first_LED = true;
+//printf("sim_2\n");
     while (run_20_start_next_step()) {
+//printf("sim_3\n");
 #ifdef JUNCTION_PRECALC
-        LED_model_result_pack * el_pack = akt_sim.p_akt_sim->junctionok[1].el_egyenlet.set_junction_pre_calc(/*0.25*/0.05, 0, true, nullptr);
-        akt_sim.p_akt_sim->junctionok[1].rad.set_junction_pre_calc(/*0.25*/0.05, 0, false, el_pack);
+        if (is_first_LED) {
+            LED_model_result_pack * el_pack = akt_sim.p_akt_sim->junctionok[1].el_egyenlet.set_junction_pre_calc(0.2/*0.25*//*0.05*/, 0, true, nullptr);
+            akt_sim.p_akt_sim->junctionok[1].rad.set_junction_pre_calc(0.2/*0.25*//*0.05*/, 0, false, el_pack);
+        }
 #endif
         if (run_30_start_iteration(true)) {
 #ifdef JUNCTION_PRECALC
-
-            while (run_40_next_iteration()) {
-//                maxlepes--;
-//                if (maxlepes == 0)
-//                    break;
-            }
-            printf("***\n");
-            akt_sim.p_akt_sim->junctionok[1].el_egyenlet.set_junction_normal_calc();
-            akt_sim.p_akt_sim->junctionok[1].rad.set_junction_normal_calc();
-            while (run_40_next_iteration()) {
-                //                maxlepes--;
-                //                if (maxlepes == 0)
-                //                    break;
+            if (is_first_LED) {
+                while (run_40_next_iteration(true)) {
+                    //                maxlepes--;
+                    //                if (maxlepes == 0)
+                    //                    break;
+                }
+                printf("***\n");
+                akt_sim.p_akt_sim->junctionok[1].el_egyenlet.set_junction_normal_calc();
+                akt_sim.p_akt_sim->junctionok[1].rad.set_junction_normal_calc();
+                while (run_40_next_iteration(false)) {
+                    //                maxlepes--;
+                    //                if (maxlepes == 0)
+                    //                    break;
+                }
+                is_first_LED = false;
             }
 #endif
-            while (run_40_next_iteration()) {
+//printf("sim_4\n");
+            while (run_40_next_iteration(false)) {
                 //                maxlepes--;
                 //                if (maxlepes == 0)
                 //                    break;
+//printf("sim_5\n");
             }
+//printf("sim_6\n");
         }
-        if (run_30_start_iteration(false)) {
-            while (run_40_next_iteration())
-                ;
+// printf("sim_7\n");
+       if (run_30_start_iteration(false)) {
+            printf("sim_1\n");
+            while (run_40_next_iteration(false))
+// printf("sim_8\n");
+               ;
+//printf("sim_9\n");
         }
+//printf("sim_10\n");
         run_80_stop_step(akt_anal_index);
+//printf("sim_11\n");
     }
     run_90_befejezes();
+//printf("sim_12\n");
 }
 
 
@@ -431,6 +462,7 @@ bool vezerlo::run_20_start_next_step() {
         sum_time = rvt();
     normal_dt = akt_sim.value;
     normal_lepes_vege = sum_time;
+    akt_szimulacio_iteracioszam = 0;
 
     run_step_settings(); // Akt step alapján beállítások, pl. fa törlése
     akt_fa_tipus = (akt_sim.fa_adat != fat_double) ? fat_float : fat_double;
@@ -445,8 +477,19 @@ bool vezerlo::run_20_start_next_step() {
         akt_sim.is_uj_cellaszerkezet_elso_kor = false;
     }
     run_pre_threads(kezdo_hiba, akt_sim.p_akt_sim->cella_klaszter_tartomanyok);
-
-/*
+    
+    if (akt_sim.is_uj_fa_kell) {
+        iter_csomopontok_dc.zero();
+        for (uns i = 1; i < cellak.size(); i++)
+            cellak.unsafe(i)->update_iter_csp();
+        if (akt_sim.tipus == alt_ac) { // AC
+        }
+        else { // DC vagy tranziens
+            if (akt_sim.fa_adat != fat_double) dc_itsolver_f.init(); // float vagy double végû float
+            if (akt_sim.fa_adat != fat_float) dc_itsolver_d.init(); // double vagy double végû float
+        }
+    }
+    /*
     for (uns i = 1; i < cellak.size(); i++)
         cellak.unsafe(i).randomize_zaj();
 */
@@ -497,7 +540,7 @@ bool vezerlo::run_30_start_iteration(bool is_first_cycle) {
 
 
 //***********************************************************************
-bool vezerlo::run_40_next_iteration() {
+bool vezerlo::run_40_next_iteration(bool is_eloiteracio) {
 // Lefuttat egy iterációs lépést, és visszatérésben jelzi, hogy kell-e még iteráció.
 //***********************************************************************
     char itertip = '-';
@@ -505,12 +548,15 @@ bool vezerlo::run_40_next_iteration() {
     if (allapot == iter_dt_novelo)itertip = '^';
     if (allapot == iter_dt_stabilizalo)itertip = '#';
     analizis_lepes_iteracioszama++;
+    akt_szimulacio_iteracioszam++;
     sum_iter++;
     sumhiba_tipus dummy_hiba;
     const vektor<klaszter_tartomany> & cella_kt = akt_sim.p_akt_sim->cella_klaszter_tartomanyok;
-    switch (allapot) {
+//printf("next_1\n");
+   switch (allapot) {
         case iter_normal:
             run_lepes_threads(szat_kiind_akt_es_elore);
+//printf("next_2\n");
             iteracioszam_stoppig++;
             akt_lepes::set_aktualis_lepes_neve(::std::string("the simulation (")
                 + sim_step_szoveg + ", iter: " + ::std::to_string(iteracioszam_stoppig) + ") normal");
@@ -518,6 +564,7 @@ bool vezerlo::run_40_next_iteration() {
             break;
         case iter_dt_stabilizalo:
             run_lepes_threads(szat_kiind_akt_es_elore);
+//printf("next_3\n");
             iteracioszam_stoppig++;
             akt_lepes::set_aktualis_lepes_neve(::std::string("the simulation (")
                 + sim_step_szoveg + ", iter: " + ::std::to_string(iteracioszam_stoppig) + ") stabilizing");
@@ -529,8 +576,11 @@ bool vezerlo::run_40_next_iteration() {
             akt_sim.is_iter_dt_csokkento = true; // ne számolja újra a feszültségeket, mert az akt a kiinduló
             sum_time = akt_lepes_eleje + akt_sim.value;
             run_lepes_threads(szat_vissza); //emlekek.visszalep();
+//printf("next_4\n");
             run_post1_threads(dummy_hiba, cella_kt);
+//printf("next_5\n");
             run_lepes_threads(szat_elore); //emlekek.leptet();
+//printf("next_6\n");
             plusz_lepes++;
             iteracioszam_stoppig = 1;
             akt_lepes::set_aktualis_lepes_neve(::std::string("the simulation (")
@@ -538,6 +588,7 @@ bool vezerlo::run_40_next_iteration() {
             break;
         case iter_dt_novelo:
             run_lepes_threads(szat_megtart_akt); //emlekek.megtartando_az_aktualis();
+//printf("next_7\n");
             akt_lepes_eleje = sum_time; // elõzõ lépés elfogadása
             if (akt_lepes_eleje + (akt_sim.value<1e-11 ? rvt(20) : rvt(4)) * akt_sim.value > normal_lepes_vege) {
                 akt_sim.value = normal_lepes_vege - akt_lepes_eleje;
@@ -551,8 +602,11 @@ bool vezerlo::run_40_next_iteration() {
             }
             akt_sim.is_subiter_dt_changed = true;
             akt_sim.is_iter_dt_csokkento = true; //nem számohat feszültségeket
+//printf("next_8\n");
             run_post1_threads(dummy_hiba, cella_kt);
+//printf("next_9\n");
             run_lepes_threads(szat_kiind_akt_es_elore);
+//printf("next_10\n");
             plusz_lepes++;
             iteracioszam_stoppig = 1;
             akt_lepes::set_aktualis_lepes_neve(::std::string("the simulation (")
@@ -562,20 +616,69 @@ bool vezerlo::run_40_next_iteration() {
             break;
     }
 
+//printf("next_11\n");
     if (analizis_lepes_iteracioszama > 1)
         akt_sim.set_akt_iter();
 
+//printf("next_12\n");
     akt_hiba.zero();
-    for (uns akt_fa = 1; akt_fa <= akt_sim.p_akt_sim->db_fa; akt_fa++) { // az összes fát megcsinálja
-        const uns gyoker_index = (akt_fa == 1) ? akt_sim.p_akt_sim->gyoker_1_index : akt_sim.p_akt_sim->gyoker_2_index;
-        run_fw_threads(akt_fa, akt_fa_tipus);                                                   if (akt_anal_index < 3)most("run_simulation fw is done");
-        run_apply_externals(gyoker_index);
-        run_bw_threads(akt_fa, akt_fa_tipus, gyoker_index);                                     if (akt_anal_index < 3)most("run_simulation bw is done");
+    if (akt_sim.solver_type == st_sunred || akt_sim.p_akt_sim->db_fa > 1) {
+        for (uns akt_fa = 1; akt_fa <= akt_sim.p_akt_sim->db_fa; akt_fa++) { // az összes fát megcsinálja
+            const uns gyoker_index = (akt_fa == 1) ? akt_sim.p_akt_sim->gyoker_1_index : akt_sim.p_akt_sim->gyoker_2_index;
+//printf("next_13\n");
+            run_fw_threads(akt_fa, akt_fa_tipus);
+            if (akt_anal_index < 3)most("run_simulation fw is done");
+//printf("next_14\n");
+            run_apply_externals(gyoker_index);
+//printf("next_15\n");
+            run_bw_threads(akt_fa, akt_fa_tipus, gyoker_index);
+            if (akt_anal_index < 3)most("run_simulation bw is done");
+//printf("next_16\n");
+            run_post1_threads(akt_hiba, cella_kt); if (akt_anal_index < 3)most("run_simulation post cella cluster is done");
+//printf("next_17\n");
+        }
+    }
+    else { // iter
+        if (akt_fa_tipus == fat_float) {
+//printf("next_18\n");
+            dc_itsolver_f.load(0, dc_itsolver_f.get_node_num());
+            for (uns i = 0; i < 100; i++) {
+//printf("next_19\n");
+                dc_itsolver_f.do_jacobi_1_noerr(0, dc_itsolver_f.get_node_num());
+//printf("next_20\n");
+                dc_itsolver_f.do_jacobi_2_noerr(0, dc_itsolver_f.get_node_num());
+//printf("next_21\n");
+            }
+//printf("next_22\n");
+            dc_itsolver_f.store(0, dc_itsolver_f.get_node_num());
+//printf("next_23\n");
+        }
+        else {
+            if (akt_anal_index < 3)most("run_simulation something is done");
+//printf("next_24\n");
+            dc_itsolver_d.load(0, dc_itsolver_d.get_node_num());
+            if (akt_anal_index < 3)most("run_simulation load is done");
+            for (uns i = 0; i < 10000; i++) {
+//printf("next_25\n");
+                dc_itsolver_d.do_jacobi_1_noerr(0, dc_itsolver_d.get_node_num());
+//printf("next_26\n");
+                dc_itsolver_d.do_jacobi_2_noerr(0, dc_itsolver_d.get_node_num());
+//printf("next_27\n");
+            }
+            if (akt_anal_index < 3)most("run_simulation iter is done");
+//printf("next_28\n");
+            dc_itsolver_d.store(0, dc_itsolver_d.get_node_num());
+//printf("next_29\n");
+        }
+        if (akt_anal_index < 3)most("run_simulation store is done");
+//printf("next_30\n");
         run_post1_threads(akt_hiba, cella_kt); if (akt_anal_index < 3)most("run_simulation post cella cluster is done");
+//printf("next_31\n");
     }
 
     // Konvergencia javítása
-
+/**/ // LED tranzienshez ezt a részt ki kell szedni!
+//printf("next_32\n");
     if (akt_sim.tipus == alt_trans) {
         const rvt csokkento_max_T_hiba = rvt(1); // mondjuk max. 1 K ugrást engedünk meg.
         if (akt_sim.value>1e-15 && (akt_hiba.max_T_hiba > (is_elso_iter ? (5 * csokkento_max_T_hiba) : csokkento_max_T_hiba) || abs((akt_hiba.max_T_hiba-prev_hiba.max_T_hiba)/akt_hiba.max_T_hiba) < 1e-5)) {
@@ -586,7 +689,8 @@ bool vezerlo::run_40_next_iteration() {
                 allapot = iter_dt_stabilizalo;
         }
     }
-
+/**/
+//printf("next_33\n");
     if ((allapot==iter_normal || allapot==iter_dt_stabilizalo) && akt_sim.p_akt_sim->nemlin_tipus != nmt_klasszik_iteracio && iteracioszam_stoppig > 1) { // Az elsõ iteráció után a prev_hibákhoz nincs értelme hasonlítani (akár új lépés, akár float/double váltás)
         // Az IP hiba a hibák összege, az UT hiba a hibák átlaga
         if (akt_hiba.sum_IP_hiba >= akt_sim.max_hiba || (prev_hiba.sum_IP_hiba >= akt_sim.max_hiba && akt_hiba.sum_IP_hiba >= 0.1*prev_hiba.sum_IP_hiba)) {
@@ -594,13 +698,18 @@ bool vezerlo::run_40_next_iteration() {
                 rvt alfa = prev_hiba.sum_IP_hiba / (prev_hiba.sum_IP_hiba + akt_hiba.sum_IP_hiba);
                 if (alfa < 0.25)
                     alfa = 0.25;
+//printf("next_34\n");
                 run_lepes_threads(szat_elore); //emlekek.leptet();
                 sumhiba_tipus uj_hiba;
                                 
+//printf("next_35\n");
                 run_post2_threads(alfa, uj_hiba, cella_kt); // post2 cella klaszterek indítása
                                 
+//printf("next_36\n");
                 if (uj_hiba.sum_IP_hiba > akt_hiba.sum_IP_hiba) {
+//printf("next_37\n");
                     run_lepes_threads(szat_vissza); //emlekek.visszalep();
+//printf("next_38\n");
                 }
                 else {
                     akt_hiba = uj_hiba;
@@ -612,14 +721,19 @@ bool vezerlo::run_40_next_iteration() {
                 const uns sorozatszam = 3;
                 for (uns i = 0; i < sorozatszam; i++) {
                     alfa *= rvt(0.4);
+//printf("next_39\n");
                     run_lepes_threads(szat_elore); //emlekek.leptet();
+//printf("next_40\n");
                     sumhiba_tipus uj_hiba;
 
                     run_post2_threads(alfa, uj_hiba, cella_kt); // post2 cella klaszterek indítása
+//printf("next_41\n");
                                     
                     if (uj_hiba.sum_IP_hiba > rvt(2)*prev_hiba.sum_IP_hiba)
                         if (i < sorozatszam - 1) {
+//printf("next_42\n");
                             run_lepes_threads(szat_vissza); //emlekek.visszalep();
+//printf("next_43\n");
                         }
                         else {
                             akt_hiba = uj_hiba;
@@ -633,20 +747,31 @@ bool vezerlo::run_40_next_iteration() {
         }
     }
     // akt_iterstop_hiba = akt_IP_hiba < akt_sim.max_hiba*1.0e-6 ? akt_IP_hiba : akt_IP_hiba + akt_UT_hiba;
+//printf("next_44\n");
     akt_iterstop_hiba = akt_hiba.sum_IP_hiba + akt_hiba.max_UT_hiba;
-    if (allapot == iter_dt_stabilizalo && (akt_iterstop_hiba < akt_sim.max_hiba || iteracioszam_stoppig >= akt_sim.max_iter))
+    if (allapot == iter_dt_stabilizalo && (akt_iterstop_hiba < akt_sim.max_hiba || iteracioszam_stoppig >= akt_sim.max_iter
+        || akt_szimulacio_iteracioszam > 400))
         allapot = iter_dt_novelo;
     // ide esetleg lehet tenni egy opciós mentést, ha nézni akarjuk a konvergenciát
 
     //rvt atlag_IP_hiba = sqrt(akt_IP_hiba) / (akt_center_csomopont_db + csatlakozo_aramok_dc.size() - 1);
-    printf("anal=%-4u iter=%-3u sum_iter=%-5u sum_time=%-12.6g dt=%-9.3g ", akt_anal_index, iteracioszam_stoppig, sum_iter, sum_time, akt_sim.value);
-    printf("iter_err=%-9.3g IP_err=%-9.3g VT_err=%-9.3g T_err=%-9.3g alfa=%.3g", akt_iterstop_hiba, akt_hiba.sum_IP_hiba, akt_hiba.max_UT_hiba, akt_hiba.max_T_hiba, akt_sim.alfa);
-//                    printf("VT_err=%-9.3g %c T_err=%-9.3g alfa=%.3g", akt_UT_hiba, itertip, akt_T_hiba, akt_sim.alfa);
+    printf("anal=%-4u iter=%-3u step_iter=%-3u sum_iter=%-5u sum_time=%.12f  dt=%-9.3g ", akt_anal_index, iteracioszam_stoppig, akt_szimulacio_iteracioszam, sum_iter, sum_time, akt_sim.value);
+    if (akt_iterstop_hiba > akt_hiba.max_UT_hiba*1.05)
+        printf("iter_err=%.3g  ", akt_iterstop_hiba);
+    if (akt_hiba.sum_IP_hiba > 1e-5 || akt_hiba.sum_IP_hiba > akt_hiba.max_UT_hiba)
+        printf("IP_err=%.3g  ", akt_hiba.sum_IP_hiba);
+    if (akt_hiba.max_UT_hiba > akt_hiba.max_T_hiba*1.05)
+        printf(" V_T_err=%-9.3g  T_err=%.3g", akt_hiba.max_UT_hiba, akt_hiba.max_T_hiba);
+    else
+        printf("(V)T_err=%-9.3g", akt_hiba.max_UT_hiba);
+    if (akt_sim.alfa < 0.99)
+        printf("  a=%.3g", akt_sim.alfa);
+    //                    printf("VT_err=%-9.3g %c T_err=%-9.3g alfa=%.3g", akt_UT_hiba, itertip, akt_T_hiba, akt_sim.alfa);
 /*
-    uns kiirando_T_index = 22436;
+    uns kiirando_T_index = 10273;
     if (cellak.size() > kiirando_T_index) {
-        if (cellak[kiirando_T_index].is_th)printf(" %.3gK", cellak[kiirando_T_index].th_center_face_dc.emlekek.get_akt().UT); // 10273
-        if (cellak[kiirando_T_index].is_el)printf(" %.3gV", cellak[kiirando_T_index].el_center_face_dc.emlekek.get_akt().UT); // 10273
+        if (cellak[kiirando_T_index]->is_th)printf(" %gK", ((faces_cella*)cellak[kiirando_T_index])->th_center_face_dc.emlekek.get_akt().UT); // 10273
+        if (cellak[kiirando_T_index]->is_el)printf(" %gV", ((faces_cella*)cellak[kiirando_T_index])->el_center_face_dc.emlekek.get_akt().UT); // 10273
         printf("\n");
     }
     else
@@ -666,7 +791,12 @@ bool vezerlo::run_40_next_iteration() {
         debug_write("ti_301.txt");
 */
     is_elso_iter = false;
-    return (allapot != iter_normal || (akt_iterstop_hiba >= akt_sim.max_hiba && iteracioszam_stoppig < akt_sim.max_iter));
+    if (akt_sim.is_ignore_error) {
+        allapot = iter_normal;
+        return false;
+    }
+//printf("next_45\n");
+    return (allapot != iter_normal || (akt_iterstop_hiba >= (is_eloiteracio ? akt_sim.max_hiba*100 : akt_sim.max_hiba) && iteracioszam_stoppig < akt_sim.max_iter));
 }
 
 
@@ -708,6 +838,7 @@ void akt_sim_adatai::set_akt_anal_step(adat_szimulacio * p_uj_sim, const adat_an
         is_force_face_update = true; // a kapacitások miatt a face-ek frissítése szükséges
     tipus = uj_lepes.tipus;
     value = uj_lepes.value;
+    is_ignore_error = uj_lepes.is_ignore_error;
 
     // új szimuláció esetén alaphelyzetbe állítás
 
@@ -747,6 +878,7 @@ void akt_sim_adatai::set_akt_anal_step(adat_szimulacio * p_uj_sim, const adat_an
         if (!p_akt_sim->is_KL) { // új cellastruktúra
             is_uj_fa_kell = true;
             is_uj_cellaszerkezet_kell = true;
+            solver_type = p_akt_sim->solver_type;
             is_uj_facek_letrehozasa_kell = true;
             is_tamb_update_kell = true;
             is_gerj_update_kell = true;

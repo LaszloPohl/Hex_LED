@@ -17,6 +17,7 @@
 #include <mutex>
 #include "vektor.hpp"
 #include "matrix.hpp"
+#include "bemenet.h"
 //***********************************************************************
 
 
@@ -214,6 +215,7 @@ void szalfuttato_fuggveny(szal_tipus mit_futtat);
 
 //***********************************************************************
 extern vektor<rvt> csatlakozo_aramok_dc; // a 0 indexû dummy!
+extern vektor<iter_csomopont> iter_csomopontok_dc; // a 0 indexû dummy!
 //***********************************************************************
 
 

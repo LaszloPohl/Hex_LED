@@ -92,8 +92,10 @@ void run_fw_klaszter(szal_feladat_adatai * padat) {
         else {
             if (padat->melyik_fa == 1) {
                 uns i_be = padat->klaszter_kezdoindex, i_fa = padat->faelem_kezdoindex;
+//printf("fcl_1: %u %u\n", padat->klaszter_kezdoindex, utolso);
                 for (; i_be <= utolso; i_be++, i_fa++)
                     dcfa_d.fa_1[i_fa].forward(1, fa_elemek[i_be], 1, dcfa_d.fa_1);
+//printf("fcl_2: %u %u\n", padat->klaszter_kezdoindex, utolso);
             }
             else {
                 uns i_be = padat->klaszter_kezdoindex, i_fa = padat->faelem_kezdoindex;
@@ -146,8 +148,10 @@ void run_fw_egyedi(szal_feladat_adatai * padat) {
         }
         else {
             if (padat->melyik_fa == 1) {
+//printf("fegy_1: %u\n", padat->klaszter_kezdoindex);
                 uns i_be = padat->klaszter_kezdoindex, i_fa = padat->faelem_kezdoindex;
                 dcfa_d.fa_1[i_fa].forward(padat->al_szalszam, fa_elemek[i_be], 1, dcfa_d.fa_1);
+//printf("fegy_2: %u\n", padat->klaszter_kezdoindex);
             }
             else {
                 uns i_be = padat->klaszter_kezdoindex, i_fa = padat->faelem_kezdoindex;
@@ -327,9 +331,11 @@ void run_cellafeldolgozo_klaszter(szal_feladat_adatai * padat) {
             }
         }
         else { // post típusú cellafeldolgozás: feszültségek/hõmérsékletek számítása, UT hibák számítása, dt frissítés, ha kell
+//printf("cf_1\n");
             if (!akt_sim.is_iter_dt_csokkento) {
                 if (akt_sim.p_akt_sim->nemlin_tipus == nmt_klasszik_iteracio) {
                     rvt UT_hiba = rvt(), U_hiba = rvt(), T_hiba = rvt();
+//printf("cf_2\n");
                     for (uns i = padat->klaszter_kezdoindex; i <= padat->klaszter_utolso_index; i++) {
                         os_cella & akt_cella = *cellak.unsafe(i);
                         rvt akt_T_hiba = rvt();
@@ -342,12 +348,14 @@ void run_cellafeldolgozo_klaszter(szal_feladat_adatai * padat) {
                         if (akt_U_hiba > U_hiba)
                             U_hiba = akt_U_hiba;
                     }
+//printf("cf_3\n");
                     padat->sumhiba.max_UT_hiba = UT_hiba;
                     padat->sumhiba.max_T_hiba = T_hiba;
                     padat->sumhiba.max_U_hiba = U_hiba;
                 }
                 else {
                     rvt UT_hiba = rvt(), U_hiba = rvt(), T_hiba = rvt();
+//printf("cf_4\n");
                     for (uns i = padat->klaszter_kezdoindex; i <= padat->klaszter_utolso_index; i++) {
                         os_cella & akt_cella = *cellak.unsafe(i);
                         rvt Uc, Tc, akt_T_hiba = rvt();
@@ -366,6 +374,7 @@ void run_cellafeldolgozo_klaszter(szal_feladat_adatai * padat) {
                         if (Tc > max_abs_Tc)
                             max_abs_Tc = Tc;
                     }
+//printf("cf_5\n");
                     padat->sumhiba.max_UT_hiba = UT_hiba;
                     padat->sumhiba.max_T_hiba = T_hiba;
                     padat->sumhiba.max_U_hiba = U_hiba;
@@ -374,41 +383,50 @@ void run_cellafeldolgozo_klaszter(szal_feladat_adatai * padat) {
                 }
             }
             if (akt_sim.is_subiter_dt_changed) {
+//printf("cf_6\n");
                 for (uns i = padat->klaszter_kezdoindex; i <= padat->klaszter_utolso_index; i++) {
                     os_cella & akt_cella = *cellak.unsafe(i);
                     akt_cella.update_dt_dc();
                     akt_cella.update_for_uj_lepes_dc();
                 }
+//printf("cf_7\n");
             }
         }
 
         // paraméterek frissítése
 
+//printf("cf_8\n");
         for (uns i = padat->klaszter_kezdoindex; i <= padat->klaszter_utolso_index; i++) {
             os_cella & akt_cella = *cellak.unsafe(i);
             akt_cella.cella_klaszter_3_parameterek_frissitese_dc();
             //              if (i == 22493)
             //                  cellak.unsafe(i).print_G();
         }
+//printf("cf_9\n");
 
         // ágáramok + dissz számítása (szum dissz nullázás az elõzõ lépésben)
 
+//printf("cf_10\n");
         for (uns i = padat->klaszter_kezdoindex; i <= padat->klaszter_utolso_index; i++) {
             os_cella & akt_cella = *cellak.unsafe(i);
             if (cellak.unsafe(i) == nullptr)
                 printf("\nNULLPTR\n");
             akt_cella.cella_klaszter_4_agaramok_szamitasa_dc();
         }
+//printf("cf_11\n");
 
         // hibaáramok számítása, J feltöltése
 
         if (akt_sim.p_akt_sim->nemlin_tipus == nmt_klasszik_iteracio) {
+//printf("cf_12\n");
             for (uns i = padat->klaszter_kezdoindex; i <= padat->klaszter_utolso_index; i++) {
                 os_cella & akt_cella = *cellak.unsafe(i);
                 akt_cella.cella_klaszter_5_SA_fill_J_dc();
             }
+//printf("cf_13\n");
         }
         else {
+//printf("cf_14\n");
             rvt IP_hiba = rvt();
             rvt sum_egyik = rvt(), sum_masik = rvt();
             for (uns i = padat->klaszter_kezdoindex; i <= padat->klaszter_utolso_index; i++) {
@@ -419,7 +437,9 @@ void run_cellafeldolgozo_klaszter(szal_feladat_adatai * padat) {
                 //                      printf("%u: %g\n", i, akt_hiba);
             }
             padat->sumhiba.sum_IP_hiba = IP_hiba;
+//printf("cf_15\n");
         } 
+//printf("cf_16\n");
     }
 }
 
@@ -457,9 +477,9 @@ struct egy_adat_dc {
 //***********************************************************************
     bool is_el, is_th;
     float el_adat, th_adat;
-    float diss, blue, yellow, lum; // sum-nál a kimenõ van a blue-ban és a yellow-ban, és a lum-ban a bemenõ blue
+    float diss, blue, yellow, lum, T_junct_average; // sum-nál a kimenõ van a blue-ban és a yellow-ban, és a lum-ban a bemenõ blue
     egy_adat_dc() :is_el{ false }, is_th{ false }, el_adat{ 0.0f }, th_adat{ 0.0f },
-        diss{ 0 }, blue{ 0 }, yellow{ 0 }, lum{ 0 } {}
+        diss{ 0 }, blue{ 0 }, yellow{ 0 }, lum{ 0 }, T_junct_average{ 0 } {}
     void set_el(rvt adat) { is_el = true; el_adat = (float)adat; }
     void set_th(rvt adat) { is_th = true; th_adat = (float)adat; }
 };
@@ -615,8 +635,9 @@ void run_belso_mentes(szal_feladat_adatai * padat) {
 
     for (uns i = 0; i < padat->p_akt_eredm->size(); i++) {
         mentendo_adatok & akt = fajlba_mentes.p_mentendo_adatok->push_back();
-        akt.tipus = padat->p_akt_eredm->unsafe(i).tipus; // pontprobe/imagemap
-        akt.mit_ment = padat->p_akt_eredm->unsafe(i).mit_ment;
+        const adat_eredm& aktEredm = padat->p_akt_eredm->unsafe(i);
+        akt.tipus = aktEredm.tipus; // pontprobe/imagemap
+        akt.mit_ment = aktEredm.mit_ment;
         akt.analizis_tipus = padat->analizis_tipus;
         akt.analizis_value = (float)padat->analizis_value; // tranziensnél nem dt, hanem teljes idõ
         if (akt.analizis_tipus == alt_ac) {
@@ -625,8 +646,8 @@ void run_belso_mentes(szal_feladat_adatai * padat) {
         else{
             switch (akt.tipus) {
                 case et_c_pontprobe: {
-                    if (cellak.unsafe(padat->p_akt_eredm->unsafe(i).cella_index)->get_tipus() == ct_faces_cella) {
-                        const faces_cella & akt_cella = *static_cast<faces_cella*>(cellak[padat->p_akt_eredm->unsafe(i).cella_index]);
+                    if (cellak.unsafe(aktEredm.cella_index)->get_tipus() == ct_faces_cella) {
+                        const faces_cella & akt_cella = *static_cast<faces_cella*>(cellak[aktEredm.cella_index]);
                         switch (akt.mit_ment) {
                             case mm_UT: {
                                 if (akt_cella.is_el)
@@ -657,9 +678,9 @@ void run_belso_mentes(szal_feladat_adatai * padat) {
                 }
                 break;
                 case et_f_pontprobe: {
-                    if (cellak.unsafe(padat->p_akt_eredm->unsafe(i).cella_index)->get_tipus() == ct_faces_cella) {
-                        const faces_cella & akt_cella = *static_cast<faces_cella*>(cellak[padat->p_akt_eredm->unsafe(i).cella_index]);
-                        const face_tok_dc & akt_tok = akt_cella.faces_dc[padat->p_akt_eredm->unsafe(i).face_index];
+                    if (cellak.unsafe(aktEredm.cella_index)->get_tipus() == ct_faces_cella) {
+                        const faces_cella & akt_cella = *static_cast<faces_cella*>(cellak[aktEredm.cella_index]);
+                        const face_tok_dc & akt_tok = akt_cella.faces_dc[aktEredm.face_index];
                         switch (akt.mit_ment) {
                             case mm_UT: {
                                 if (akt_tok.p_core->is_El())
@@ -682,6 +703,33 @@ void run_belso_mentes(szal_feladat_adatai * padat) {
                     }
                     else
                         TODO("run_belso_mentes => 2");
+                }
+                break;
+                case et_currentprobe: {
+                    rvt sumI = 0.0;
+                    uns elDb = 0, thDb = 0;
+                    for (uns k = 0; k < aktEredm.currentProbe.size(); k++) {
+                        const adat_eredm::CurrIndex& aktFace = aktEredm.currentProbe[k];
+                        if (cellak.unsafe(aktFace.cella_index)->get_tipus() == ct_faces_cella) {
+                            const faces_cella& akt_cella = *static_cast<faces_cella*>(cellak[aktFace.cella_index]);
+                            const face_tok_dc& akt_tok = akt_cella.faces_dc[aktFace.face_index];
+                            sumI += akt_tok.emlekek.get_mentendo().IP;
+                            if (akt_tok.p_core->is_El())
+                                elDb++;
+                            else
+                                thDb++;
+                        }
+                        else
+                            TODO("run_belso_mentes => 2b");
+                    }
+                    if (elDb > 0 && thDb > 0)
+                        throw hiba(1, "thermal and electrical faces mixed in the current probe");
+                    if (fabs(sumI) <= 1e-21) // ha nagyon kicsi az áram, azt 0-nak tekintjük
+                        sumI = 0;
+                    if (elDb > 0)
+                        akt.probe_dc.set_el(sumI);
+                    else
+                        akt.probe_dc.set_th(sumI);
                 }
                 break;
                 case et_c_map: {
@@ -853,21 +901,32 @@ void run_belso_mentes(szal_feladat_adatai * padat) {
         akt.analizis_tipus = padat->analizis_tipus;
         akt.analizis_value = 0;
         rvt sum_be_blue = 0, sum_ki_blue = 0, sum_ki_yellow = 0, sum_ki_diss = 0;
+        uns junct_db = 0;
+        rvt sum_T_junct = 0;
         for (uns i = 1; i < cellak.size(); i++) {
             if (cellak.unsafe(i)->get_tipus() == ct_faces_cella) {
                 const faces_cella & akt_cella = *static_cast<faces_cella*>(cellak.unsafe(i));
+                bool is_junct = false;
                 for (uns j = 1; j < akt_cella.faces_dc.size(); j++) {
-                    sum_be_blue += akt_cella.faces_dc[j].emlekek.get_mentendo().rad;
+                    const face_tok_dc & ft = akt_cella.faces_dc[j];
+                    sum_be_blue += ft.emlekek.get_mentendo().rad;
+                    if (ft.p_core != nullptr && ft.p_core->is_junction())
+                        is_junct = true;
                 }
                 sum_ki_blue += akt_cella.emlekek.get_mentendo().sum_blue_out;
                 sum_ki_yellow += akt_cella.emlekek.get_mentendo().sum_yellow_out;
                 sum_ki_diss += akt_cella.emlekek.get_mentendo().sum_diss_out;
+                if (is_junct && akt_cella.is_th) {
+                    junct_db++;
+                    sum_T_junct += akt_cella.th_center_face_dc.emlekek.get_mentendo().UT + Tamb;
+                }
             }
         }
         akt.probe_dc.blue   = (float)sum_ki_blue;
         akt.probe_dc.yellow = (float)sum_ki_yellow;
         akt.probe_dc.lum    = (float)sum_be_blue;
         akt.probe_dc.diss   = (float)sum_ki_diss;
+        akt.probe_dc.T_junct_average = junct_db == 0 ? 0 : ((float)(sum_T_junct / junct_db));
     }
     feldolgozo.betesz(fajlba_mentes, false);
 }
@@ -877,7 +936,7 @@ void run_belso_mentes(szal_feladat_adatai * padat) {
 void szamkiiro(FILE *fp, float ertek, bool is_use_commas) {
 //***********************************************************************
     char s[50];
-    sprintf_s(s, 50, "\t%g", ertek);
+    sprintf_s(s, 50, "%-12g", ertek);
     if (is_use_commas) {
         char *ppont = strchr(s, '.');
         if (ppont != nullptr)
@@ -910,7 +969,7 @@ void run_fajlba_mentes(szal_feladat_adatai * padat) {
     uns db = 0;
     for (void * it = padat->p_mentendo_adatok->get_it(); it != nullptr; padat->p_mentendo_adatok->inc_it(it)) {
         const mentendo_adatok & adat = padat->p_mentendo_adatok->get_akt(it);
-        if (adat.tipus == et_c_pontprobe || adat.tipus == et_f_pontprobe)
+        if (adat.tipus == et_c_pontprobe || adat.tipus == et_f_pontprobe || adat.tipus == et_currentprobe)
             db++;
     }
 
@@ -924,11 +983,12 @@ void run_fajlba_mentes(szal_feladat_adatai * padat) {
         if (fopen_s(&fp, (padat->eredm_utvonal + "probe_results.txt").c_str(), is_felulir ? "wt" : "at") != 0)
             throw hiba(1, "cannot open %s to write", (padat->eredm_utvonal + "probe_results.txt").c_str());
         // TODO: fejléc kiírása
-        fprintf(fp, "%u", padat->akt_anal_index);
+        //fprintf(fp, "%u", padat->akt_anal_index);
         if (padat->analizis_tipus == alt_dc)
             fprintf(fp, "\tDC");
         else
             szamkiiro(fp, (float)padat->analizis_value, padat->is_use_commas);
+        //fprintf(fp, "\n");
         for (void * it = padat->p_mentendo_adatok->get_it(); it != nullptr; padat->p_mentendo_adatok->inc_it(it)) {
             const mentendo_adatok & adat = padat->p_mentendo_adatok->get_akt(it);
             if (adat.tipus == et_c_pontprobe || adat.tipus == et_f_pontprobe) {
@@ -938,16 +998,27 @@ void run_fajlba_mentes(szal_feladat_adatai * padat) {
                 if (adat.probe_dc.is_th)
                     szamkiiro(fp, adat.probe_dc.th_adat, padat->is_use_commas);
                 else fprintf(fp, "\t-");
-                szamkiiro(fp, adat.probe_dc.diss, padat->is_use_commas);
-                szamkiiro(fp, adat.probe_dc.blue, padat->is_use_commas);
-                szamkiiro(fp, adat.probe_dc.yellow, padat->is_use_commas);
-                szamkiiro(fp, adat.probe_dc.lum, padat->is_use_commas);
-                fprintf(fp, "\n");
+                if (adat.probe_dc.blue != 0) {
+                    szamkiiro(fp, adat.probe_dc.diss, padat->is_use_commas);
+                    szamkiiro(fp, adat.probe_dc.blue, padat->is_use_commas);
+                    szamkiiro(fp, adat.probe_dc.yellow, padat->is_use_commas);
+                    szamkiiro(fp, adat.probe_dc.lum, padat->is_use_commas);
+                }
+                //fprintf(fp, "\n");
+            }
+            else if (adat.tipus == et_currentprobe) {
+                if (adat.probe_dc.is_el)
+                    szamkiiro(fp, adat.probe_dc.el_adat, padat->is_use_commas);
+                if (adat.probe_dc.is_th)
+                    szamkiiro(fp, adat.probe_dc.th_adat, padat->is_use_commas);
             }
             else if (adat.tipus == et_sum_value) {
+/**/
                 if (adat.probe_dc.lum > 0) {
                     fprintf(fp, "\n");
-                    fprintf(fp, "blue_in=");
+                    fprintf(fp, "T_junct_average=");
+                    szamkiiro(fp, adat.probe_dc.T_junct_average, padat->is_use_commas);
+                    fprintf(fp, "\nblue_in=");
                     szamkiiro(fp, adat.probe_dc.lum, padat->is_use_commas);
                     fprintf(fp, "\nblue_out=");
                     szamkiiro(fp, adat.probe_dc.blue, padat->is_use_commas);
@@ -965,6 +1036,7 @@ void run_fajlba_mentes(szal_feladat_adatai * padat) {
                     szamkiiro(fp, (adat.probe_dc.blue + adat.probe_dc.yellow + adat.probe_dc.diss) / adat.probe_dc.lum, padat->is_use_commas);
                     fprintf(fp, "\n");
                 }
+/**/
             }
         }
         fprintf(fp, "\n");
@@ -1158,7 +1230,7 @@ void Para_engine::kesz_egy_munka(szal_feladat_adatai * p_feladat) {
     // A hívó folyamat értesítése arról, hogy kész a feladat (mátrixmûveletnél használjuk, de lehetne máshol is)
 
     if (p_kesz_egy_feladat != nullptr) {
-        p_kesz_egy_feladat->notify_all();
+        //p_kesz_egy_feladat->notify_all(); // kivettem 2021.03.17., mert segfault miatt elszállt
     }
 }
 

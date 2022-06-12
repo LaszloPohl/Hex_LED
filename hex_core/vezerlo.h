@@ -34,6 +34,9 @@ extern redukcios_fa<::std::complex<float>, true>  acfa_f;
 extern redukcios_fa<::std::complex<double>, true> acfa_d;
 extern vektor<os_cella*> cellak; // a 0 indexû dummy!
 extern vektor<rvt> csatlakozo_aramok_dc; // a 0 indexû dummy!
+extern vektor<iter_csomopont> iter_csomopontok_dc; // a 0 indexû dummy!
+extern iter_solver<float> dc_itsolver_f;
+extern iter_solver<double> dc_itsolver_d;
 extern Para_engine feldolgozo;
 //***********************************************************************
 //***********************************************************************
@@ -96,7 +99,7 @@ private:
     fa_adat_tipus akt_fa_tipus;
     sumhiba_tipus akt_hiba, prev_hiba;
     uns analizis_lepes_iteracioszama;
-    uns iteracioszam_stoppig;
+    uns iteracioszam_stoppig, akt_szimulacio_iteracioszam;
     uns plusz_lepes;
     rvt akt_iterstop_hiba; // ami alapján az iterációt megállítjuk
     enum iterfajta{ iter_normal, iter_dt_csokkento, iter_dt_novelo, iter_dt_stabilizalo }; 
@@ -113,7 +116,7 @@ public:
     bool run_20_start_next_step(); // A bemeneti adatokból betölti a következõ lépést. Ha az elõzõ szimuláció kész volt, akkor a köv szim. elsõ lépését. Retunr: false, nincs több lépés.
     void run_2A_start_external_step(const adat_analizis_lepes & lepes); // Ha kívülrõl, pl. guiból adjuk meg a következõ lépést. (Ha van bemeneti adat, akkor az akár folytatható is ez után a lépés után.)
     bool run_30_start_iteration(bool is_first_cycle); // Kétszer kell meghívni: elõbb true-val, majd az iterációk jönnek, aztán false-szal. Ha az is_first_cycle false, és nem duplavégû float, akkor nem csinál semmit, és false-t ad vissza, ekkor utána nem hívjuk az iterációkat.
-    bool run_40_next_iteration(); // Lefuttat egy iterációs lépést, és visszatérésben jelzi, hogy kész van-e, vagy kell még iteráció.
+    bool run_40_next_iteration(bool is_eloiteracio); // Lefuttat egy iterációs lépést, és visszatérésben jelzi, hogy kész van-e, vagy kell még iteráció.
     void run_80_stop_step(uns mentes_index); // belsõ menti az eredményt a mentes_index azonosítójú map-ekbe, ha external step, pl. >1M, és a txt-ben esetleg lehetne jelölni.
     void run_90_befejezes(); // Ha lefutott az összes szimuláció, akkor az utómunka.
     //***********************************************************************

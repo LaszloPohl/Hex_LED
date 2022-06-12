@@ -276,7 +276,10 @@ inline void redukcios_fa_elem<adattipus, is_ac>::JA_JB_feltoltese(){
 template<typename adattipus, bool is_ac>
 inline void redukcios_fa_elem<adattipus, is_ac>::math_reduce_symm(uns al_szalszam){
 //***********************************************************************
-    if (YB_NZB.get_col() == 1) {
+    if (YB_NZB.get_col() == 0) {
+        ;
+    }
+    else if (YB_NZB.get_col() == 1) {
         NZBXA.math_1_ninv_mul(YB_NZB, XA);
         YRED.math_1_add_mul_symm(YRED, XB, NZBXA);
     }
@@ -305,7 +308,10 @@ inline void redukcios_fa_elem<adattipus, is_ac>::math_reduce_symm(uns al_szalsza
 template<typename adattipus, bool is_ac>
 inline void redukcios_fa_elem<adattipus, is_ac>::math_reduce_nonsymm(uns al_szalszam){
 //***********************************************************************
-    if (YB_NZB.get_col() == 1) {
+    if (YB_NZB.get_col() == 0) {
+        ;
+    }
+    else if (YB_NZB.get_col() == 1) {
         NZBXA.math_1_ninv_mul(YB_NZB, XA);
         YRED.math_1_add_mul(YRED, XB, NZBXA);
     }
@@ -336,7 +342,10 @@ inline void redukcios_fa_elem<adattipus, is_ac>::math_reduce_nonsymm(uns al_szal
 template<typename adattipus, bool is_ac>
 inline void redukcios_fa_elem<adattipus, is_ac>::math_forward(uns al_szalszam){
 //***********************************************************************
-    if (YB_NZB.get_col() == 1) {
+    if (YB_NZB.get_col() == 0) {
+        ;
+    }
+    else if (YB_NZB.get_col() == 1) {
         math_1x1_mul(NZBJB, YB_NZB, JB);
         math_1_add_mul_jred(JRED, JA, XB, NZBJB);
     }
@@ -628,6 +637,171 @@ inline void redukcios_fa_elem<adattipus, is_ac>::backward(uns al_szalszam){
         p_jobb->is_bw_mehet = true;
     }
     is_fw_kesz = false;
+}
+
+
+//***********************************************************************
+template<typename adattipus> class iter_solver {
+//***********************************************************************
+    //***********************************************************************
+    struct elem_adat {
+    //***********************************************************************
+        adattipus elso, masodik;// az iterációban kiszámított feszültség / hõmérséklet
+        adattipus sajat_r, sajat_i; // a két g ill. i összege
+        uns sajat_index_1, sajat_index_2; // az admittanciamátrix mely x-y eleme ez
+        uns cella_1_index, cella_2_index;
+        vektor<adattipus> g;    // a nem saját g-k, a 0 indexû is érvényes
+        vektor<uns> VT_index;   // melyik elemben van a fest vagy hõm érték
+    };
+    //***********************************************************************
+    vektor<elem_adat> nodes; // a 0 indexû dummy
+    //***********************************************************************
+public:
+    //***********************************************************************
+    uns get_node_num()const { return nodes.size(); }
+    //***********************************************************************
+    void init(); // uses iter_csomopontok_dc and cellak to init nodes
+    //***********************************************************************
+    void load(uns start_index, uns to_index); // i=start_index; i<to_index
+    //***********************************************************************
+    void store(uns start_index, uns to_index); // i=start_index; i<to_index
+    //***********************************************************************
+    void do_jacobi_1_noerr(uns start_index, uns to_index);
+    //***********************************************************************
+    void do_jacobi_2_noerr(uns start_index, uns to_index);
+    //***********************************************************************
+    adattipus do_jacobi_1_err(uns start_index, uns to_index);
+    //***********************************************************************
+    adattipus do_jacobi_2_err(uns start_index, uns to_index);
+    //***********************************************************************
+};
+
+
+//***********************************************************************
+template<typename adattipus>
+inline void iter_solver<adattipus>::init() {
+//***********************************************************************
+    nodes.set_size(iter_csomopontok_dc.size());
+    for (uns i = 1; i < nodes.size(); i++) {
+        elem_adat & akt_node = nodes.unsafe(i);
+        iter_csomopont & akt_csp = iter_csomopontok_dc[i];
+        akt_node.sajat_index_1 = akt_csp.cella_1_sajat;
+        akt_node.sajat_index_2 = akt_csp.cella_2_sajat;
+        akt_node.cella_1_index = akt_csp.cella_1_index;
+        akt_node.cella_2_index = akt_csp.cella_2_index;
+        os_cella & akt_cella_1 = *cellak[akt_csp.cella_1_index];
+        os_cella & akt_cella_2 = *cellak[akt_csp.cella_2_index];
+        uns db = akt_cella_1.dc_iter_csp_index.size() + akt_cella_2.dc_iter_csp_index.size() - 2;
+        akt_node.g.set_size(db);
+        akt_node.VT_index.set_size(db);
+        uns j = 0;
+        for (uns k = 0; k < akt_cella_1.dc_iter_csp_index.size(); k++)
+            if (k != akt_node.sajat_index_1)
+                akt_node.VT_index[j++] = akt_cella_1.dc_iter_csp_index[k];
+        for (uns k = 0; k < akt_cella_2.dc_iter_csp_index.size(); k++)
+            if (k != akt_node.sajat_index_2)
+                akt_node.VT_index[j++] = akt_cella_2.dc_iter_csp_index[k];
+    }
+}
+
+
+//***********************************************************************
+template<typename adattipus>
+inline void iter_solver<adattipus>::load(uns start_index, uns to_index) {
+//***********************************************************************
+    for (uns i = 1; i < cellak.size(); i++) {
+        cellak.unsafe(i)->fw_dc(1);
+    }
+    for (uns i = 1; i < nodes.size(); i++) {
+        elem_adat & akt_node = nodes.unsafe(i);
+        const uns i1 = akt_node.sajat_index_1;
+        const uns i2 = akt_node.sajat_index_2;
+        os_cella & akt_cella_1 = *cellak[akt_node.cella_1_index];
+        os_cella & akt_cella_2 = *cellak[akt_node.cella_2_index];
+        akt_node.elso = 0;
+        akt_node.masodik = 0;
+        akt_node.sajat_i = -(adattipus)(akt_cella_1.dc_jred_1[i1] + akt_cella_2.dc_jred_1[i2]);
+        akt_node.sajat_r = 1 / (adattipus)(akt_cella_1.dc_yred_1.get_elem(i1, i1) + akt_cella_2.dc_yred_1.get_elem(i2, i2));
+        uns j = 0;
+        for (uns k = 0; k < akt_cella_1.dc_iter_csp_index.size(); k++)
+            if (k != i1)
+                akt_node.g[j++] = (adattipus)(akt_cella_1.dc_yred_1.get_elem(i1, k));
+        for (uns k = 0; k < akt_cella_2.dc_iter_csp_index.size(); k++)
+            if (k != i2)
+                akt_node.g[j++] = (adattipus)(akt_cella_2.dc_yred_1.get_elem(i2, k));
+    }
+}
+
+
+//***********************************************************************
+template<typename adattipus>
+inline void iter_solver<adattipus>::store(uns start_index, uns to_index) {
+//***********************************************************************
+    for (uns i = 1; i < nodes.size(); i++) {
+        elem_adat & akt_node = nodes.unsafe(i);
+        const uns i1 = akt_node.sajat_index_1;
+        const uns i2 = akt_node.sajat_index_2;
+        os_cella & akt_cella_1 = *cellak[akt_node.cella_1_index];
+        os_cella & akt_cella_2 = *cellak[akt_node.cella_2_index];
+        akt_cella_1.dc_UA_1[i1] = akt_node.elso;
+        akt_cella_2.dc_UA_1[i2] = akt_node.elso;
+        akt_cella_1.dc_IA_1[i1] = 0;
+        akt_cella_2.dc_IA_1[i2] = 0;
+        //printf("%g\t", akt_node.elso);
+    }
+    //printf("\n\n");
+    for (uns i = 1; i < cellak.size(); i++) {
+        cellak.unsafe(i)->bw_dc(1);
+    }
+//    printf("\n*****************************\n\n");
+//    getchar();
+}
+
+
+//***********************************************************************
+template<typename adattipus>
+inline void iter_solver<adattipus>::do_jacobi_1_noerr(uns start_index, uns to_index) {
+//***********************************************************************
+    for (uns i = 1; i < nodes.size(); i++) {
+        elem_adat & akt_node = nodes.unsafe(i);
+        adattipus sum = akt_node.sajat_i;
+        for (uns j = 0; j < akt_node.g.size(); j++)
+            sum -= akt_node.g.unsafe(j) * nodes[akt_node.VT_index.unsafe(j)].elso;
+        akt_node.masodik = sum * akt_node.sajat_r;
+        //if(akt_node.cella_1_index == 10273/* && akt_node.sajat_index_1 == 0*/)
+        //    printf("%g\n", akt_node.masodik);
+    }
+    //printf("\n");
+}
+
+
+//***********************************************************************
+template<typename adattipus>
+inline void iter_solver<adattipus>::do_jacobi_2_noerr(uns start_index, uns to_index) {
+//***********************************************************************
+    for (uns i = 1; i < nodes.size(); i++) {
+        elem_adat & akt_node = nodes.unsafe(i);
+        adattipus sum = akt_node.sajat_i;
+        for (uns j = 0; j < akt_node.g.size(); j++)
+            sum -= akt_node.g.unsafe(j) * nodes[akt_node.VT_index.unsafe(j)].masodik;
+        akt_node.elso = sum * akt_node.sajat_r;
+    }
+}
+
+
+//***********************************************************************
+template<typename adattipus>
+inline adattipus iter_solver<adattipus>::do_jacobi_1_err(uns start_index, uns to_index) {
+//***********************************************************************
+    return adattipus();
+}
+
+
+//***********************************************************************
+template<typename adattipus>
+inline adattipus iter_solver<adattipus>::do_jacobi_2_err(uns start_index, uns to_index) {
+//***********************************************************************
+    return adattipus();
 }
 
 

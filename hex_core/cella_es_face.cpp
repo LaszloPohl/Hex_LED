@@ -113,6 +113,9 @@ void faces_cella::resize_matrixok_dc() {
         dc_yred_2.set_size(A_2, A_2);
         dc_jred_1.set_size(A_1);
         dc_jred_2.set_size(A_2);
+        dc_iter_csp_index.set_size(A_1);
+        //dc_iter_csp_index_2.set_size(A_2);
+        is_iter_csp_frissitendo = true;
         dc_UA_1.set_size(A_1);
         dc_UA_2.set_size(A_2);
         dc_IA_1.set_size(A_1);
@@ -155,6 +158,8 @@ void faces_cella::resize_matrixok_dc() {
                             akt_tok.p_Ji  = &dc_ja_1.unsafe(csatlakozo_index);
                             akt_tok.p_UTi = &dc_UA_1.unsafe(csatlakozo_index);
                             akt_tok.p_IPi = &dc_IA_1.unsafe(csatlakozo_index);
+                            //dc_iter_csp_index_1.unsafe(csatlakozo_index) = (akt_tok.p_core->get_csatlakozo_index() + 1) / 2; // A csomópontot nem itt állítjuk, mert párhuzamos ágban vagyunk, ütközne.
+                            dc_iter_csp_index.unsafe(csatlakozo_index) = i;
                             csatlakozo_index++;
                             break;
                        // más face típus esetén nincs a face tokban beállítandó
@@ -176,6 +181,7 @@ void faces_cella::resize_matrixok_dc() {
                             akt_tok.p_Ji  = &dc_ja_1.unsafe(csatlakozo_index);
                             akt_tok.p_UTi = &dc_UA_1.unsafe(csatlakozo_index);
                             akt_tok.p_IPi = &dc_IA_1.unsafe(csatlakozo_index);
+                            dc_iter_csp_index.unsafe(csatlakozo_index) = i;
                             csatlakozo_index++;
                             break;
                         case ft_centroid:
@@ -204,6 +210,7 @@ void faces_cella::resize_matrixok_dc() {
                             akt_tok.p_Ji  = &dc_ja_1.unsafe(csatlakozo_index);
                             akt_tok.p_UTi = &dc_UA_1.unsafe(csatlakozo_index);
                             akt_tok.p_IPi = &dc_IA_1.unsafe(csatlakozo_index);
+                            dc_iter_csp_index.unsafe(csatlakozo_index) = i;
                             csatlakozo_index++;
                             break;
                             // más face típus esetén nincs a face tokban beállítandó
@@ -225,6 +232,7 @@ void faces_cella::resize_matrixok_dc() {
                             akt_tok.p_Ji  = &dc_ja_1.unsafe(csatlakozo_index);
                             akt_tok.p_UTi = &dc_UA_1.unsafe(csatlakozo_index);
                             akt_tok.p_IPi = &dc_IA_1.unsafe(csatlakozo_index);
+                            dc_iter_csp_index.unsafe(csatlakozo_index) = i;
                             csatlakozo_index++;
                             break;
                         case ft_centroid:
@@ -259,6 +267,7 @@ void faces_cella::resize_matrixok_dc() {
                                     akt_tok.p_Ji  = &dc_ja_1.unsafe(csatlakozo_index);
                                     akt_tok.p_UTi = &dc_UA_1.unsafe(csatlakozo_index);
                                     akt_tok.p_IPi = &dc_IA_1.unsafe(csatlakozo_index);
+                                    dc_iter_csp_index.unsafe(csatlakozo_index) = i;
                                     csatlakozo_index++;
                                     break;
                                     // más face típus esetén nincs a face tokban beállítandó
@@ -281,6 +290,7 @@ void faces_cella::resize_matrixok_dc() {
                                     akt_tok.p_Ji  = &dc_ja_1.unsafe(csatlakozo_index);
                                     akt_tok.p_UTi = &dc_UA_1.unsafe(csatlakozo_index);
                                     akt_tok.p_IPi = &dc_IA_1.unsafe(csatlakozo_index);
+                                    dc_iter_csp_index.unsafe(csatlakozo_index) = i;
                                     csatlakozo_index++;
                                     break;
                                 case ft_centroid:
@@ -310,6 +320,7 @@ void faces_cella::resize_matrixok_dc() {
                                     akt_tok.p_Ji  = &dc_ja_2.unsafe(csatlakozo_index);
                                     akt_tok.p_UTi = &dc_UA_2.unsafe(csatlakozo_index);
                                     akt_tok.p_IPi = &dc_IA_2.unsafe(csatlakozo_index);
+                                    //dc_iter_csp_index_2.unsafe(csatlakozo_index) = i;
                                     csatlakozo_index++;
                                     break;
                                     // más face típus esetén nincs a face tokban beállítandó
@@ -332,6 +343,7 @@ void faces_cella::resize_matrixok_dc() {
                                     akt_tok.p_Ji  = &dc_ja_2.unsafe(csatlakozo_index);
                                     akt_tok.p_UTi = &dc_UA_2.unsafe(csatlakozo_index);
                                     akt_tok.p_IPi = &dc_IA_2.unsafe(csatlakozo_index);
+                                    //dc_iter_csp_index_2.unsafe(csatlakozo_index) = i;
                                     csatlakozo_index++;
                                     break;
                                 case ft_centroid:
@@ -362,6 +374,7 @@ void faces_cella::resize_matrixok_dc() {
                                 akt_tok.p_Ji  = &dc_ja_1.unsafe(csatlakozo_index);
                                 akt_tok.p_UTi = &dc_UA_1.unsafe(csatlakozo_index);
                                 akt_tok.p_IPi = &dc_IA_1.unsafe(csatlakozo_index);
+                                dc_iter_csp_index.unsafe(csatlakozo_index) = i;
                                 csatlakozo_index++;
                                 break;
                            // más face típus esetén nincs a face tokban beállítandó
@@ -390,6 +403,7 @@ void faces_cella::resize_matrixok_dc() {
                                 akt_tok.p_Ji  = &dc_ja_1.unsafe(csatlakozo_index);
                                 akt_tok.p_UTi = &dc_UA_1.unsafe(csatlakozo_index);
                                 akt_tok.p_IPi = &dc_IA_1.unsafe(csatlakozo_index);
+                                dc_iter_csp_index.unsafe(csatlakozo_index) = i;
                                 csatlakozo_index++;
                                 break;
                             case ft_centroid:
@@ -422,6 +436,7 @@ void faces_cella::resize_matrixok_dc() {
                                 akt_tok.p_Ji  = &dc_ja_1.unsafe(csatlakozo_index);
                                 akt_tok.p_UTi = &dc_UA_1.unsafe(csatlakozo_index);
                                 akt_tok.p_IPi = &dc_IA_1.unsafe(csatlakozo_index);
+                                dc_iter_csp_index.unsafe(csatlakozo_index) = i;
                                 csatlakozo_index++;
                                 break;
                             case ft_centroid:
@@ -454,6 +469,7 @@ void faces_cella::resize_matrixok_dc() {
                                 akt_tok.p_Ji  = &dc_ja_1.unsafe(csatlakozo_index);
                                 akt_tok.p_UTi = &dc_UA_1.unsafe(csatlakozo_index);
                                 akt_tok.p_IPi = &dc_IA_1.unsafe(csatlakozo_index);
+                                dc_iter_csp_index.unsafe(csatlakozo_index) = i;
                                 csatlakozo_index++;
                                 break;
                             case ft_centroid:
@@ -773,6 +789,41 @@ void faces_cella::update_for_uj_lepes_dc(){
             el_center_face_dc.p_core->update_uj_lepeshez();
         if(is_th)
             th_center_face_dc.p_core->update_uj_lepeshez();
+    }
+}
+
+
+//***********************************************************************
+void faces_cella::update_iter_csp() {
+//***********************************************************************
+    if (is_iter_csp_frissitendo) { // dc_iter_csp_index_1
+        is_iter_csp_frissitendo = false;
+        for (uns i = 0; i < dc_iter_csp_index.size(); i++) {
+            uns j = dc_iter_csp_index.unsafe(i);
+            uns u = (faces_dc.unsafe(j).p_core->get_csatlakozo_index() + 1) / 2;
+            dc_iter_csp_index.unsafe(i) = u;
+        }
+/*        for (uns i = 0; i < dc_iter_csp_index_2.size(); i++) {
+            uns dex = dc_iter_csp_index_2.unsafe(i);
+            uns u = (faces_dc.unsafe(dex).p_core->get_csatlakozo_index() + 1) / 2;
+            dc_iter_csp_index_2.unsafe(i) = u;
+        }
+*/    
+    }
+    for (uns i = 0; i < dc_iter_csp_index.size(); i++) {
+        uns j = dc_iter_csp_index.unsafe(i);
+        iter_csomopont & akt_csp = iter_csomopontok_dc[j];
+        if (akt_csp.cella_1_index == 0) {
+            akt_csp.cella_1_index = cella_index;
+            akt_csp.cella_1_sajat = i;
+        }
+        else if (akt_csp.cella_2_index == 0) {
+            akt_csp.cella_2_index = cella_index;
+            akt_csp.cella_2_sajat = i;
+        }
+        else {
+            throw hiba("faces_cella::update_iter_csp", "3rd set (%u, %u, %u)", akt_csp.cella_1_index, akt_csp.cella_2_index, cella_index);
+        }
     }
 }
 

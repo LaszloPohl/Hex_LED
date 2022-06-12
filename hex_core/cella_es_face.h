@@ -46,6 +46,7 @@ public:
     matrix<rvt> dc_yred_1, dc_yred_2;
     vektor<rvt> dc_jred_1, dc_jred_2;
     vektor<rvt> dc_UA_1, dc_UA_2, dc_IA_1, dc_IA_2;
+    vektor<uns> dc_iter_csp_index;
     matrix<::std::complex<rvt> > ac_yred_1, ac_yred_2;
     vektor<::std::complex<rvt> > ac_jred_1, ac_jred_2;
     vektor<::std::complex<rvt> > ac_UA_1, ac_UA_2, ac_IA_1, ac_IA_2;
@@ -55,6 +56,7 @@ public:
     const adat_cella * p_adatcella;
     const adat_anyag * p_cella_anyag; // nem minden cellatípushoz van hozzárendelt anyag, pl. komplex_cella, ekkor nullptr
     bool is_el, is_th; // ha van elektromos/termikus face, akkor igaz
+    bool is_iter_csp_frissitendo;
 
     //***********************************************************************
     struct cella_emlek {
@@ -88,7 +90,7 @@ public:
     os_cella() :is_lin{ false }, cella_index{ 0 }, is_el{ false }, is_th{ false }, p_adatcella{ nullptr },
         is_elektrotermikus_szimulacio{ false }, is_besugarzo{ false }, p_cella_anyag{ nullptr }, 
         A_1{ 0 }, A_2{ 0 }, B_1{ 0 }, B_2{ 0 }, is_2_fa{ false }, is_change_adm{ true }, is_change_j{ true },
-        A_top{ 1 } {}
+        A_top{ 1 }, is_iter_csp_frissitendo{ false } {}
     void reset_H(); // új szimuláció és lényeges változás esetén
     bool is_adm_changed()const { return is_change_adm; }
     bool is_j_changed()const { return is_change_j; }
@@ -115,6 +117,7 @@ public:
     virtual void peremfeltetel_update_dc() = 0;
     virtual void del_all_prev_dc() = 0;
     virtual void update_for_uj_lepes_dc() = 0; // pl. kapacitások feszültségeének frissítése
+    virtual void update_iter_csp() = 0;
     // void update_for_uj_lepes_ac(); // AC-nál nincs belsõ iteráció
     //***********************************************************************
     // NR = Newton-Raphson
@@ -199,6 +202,7 @@ public:
 class os_face_core_dc;
 class os_face_core_ac;
 extern vektor<rvt> csatlakozo_aramok_dc; // a 0 indexû dummy!
+extern vektor<iter_csomopont> iter_csomopontok_dc; // a 0 indexû dummy!
 //***********************************************************************
 
 
@@ -313,6 +317,7 @@ public:
     void peremfeltetel_update_dc() override;
     void del_all_prev_dc() override;
     void update_for_uj_lepes_dc() override; // pl. kapacitások feszültségeének frissítése
+    void update_iter_csp() override;
     // void update_for_uj_lepes_ac(); // AC-nál nincs belsõ iteráció
     //***********************************************************************
     // NR = Newton-Raphson
@@ -545,6 +550,10 @@ public:
         :p_tok{ p_tok }, p_cella{ p_cella }, p_adat_face{ p_adat_face }, p_anyag{ nullptr }, p_junction{ nullptr },
         is_el{ is_el }, is_kell_rand{ true }, csatlakozo_index{ p_adat_face==nullptr ? 0 : p_adat_face->csatlakozo_index },
         zaj_szorzo{ 1 } {}
+    //***********************************************************************
+    bool is_junction()const { return p_junction != nullptr; }
+    //***********************************************************************
+    uns get_csatlakozo_index()const { return csatlakozo_index; }
     //***********************************************************************
     void randomize_zaj() {
     //***********************************************************************

@@ -438,6 +438,15 @@ public:
     //***********************************************************************
     adattipus & get_elem_unsafe(meret_t row, meret_t col) { return sorok.unsafe(row).unsafe(col); }
     //***********************************************************************
+    const adattipus & get_elem(meret_t row, meret_t col) const {
+    //***********************************************************************
+        if (is_szimm) {// így az m[i][j] valóban az i,j indexû elemet adja, de j>=i kötelezõ!
+            return (col < row) ? sorok.unsafe(col).unsafe(row) : sorok.unsafe(row).unsafe(col);
+        }
+        else {
+            return sorok.unsafe(row).unsafe(col);
+        }
+    }
 
     //***********************************************************************
     void debug_write(::std::ofstream & fs) const{
@@ -2440,7 +2449,7 @@ public:
     void egyseg() {
     //***********************************************************************
         igaz_e_hiba(is_szimm, "matrix::egyseg", "symmetrical matrix not allowed");
-        zero();
+        t.zero();
         for (meret_t i = 0; i < row; i++)
             sorok.unsafe(i).unsafe(i) = 1.0;
     }
@@ -3360,9 +3369,9 @@ public:
             //      \ |        \ |     |   |   | M |
             //       \|         \|     -----   -----
 
-            cuns db_1 = ((dest.get_col() + 2) / 4) * 4;
+            cuns db_1 = ((dest.get_col() + 2) / 4) * 2;
             cuns db_2 = dest.get_col() - db_1;
-            cuns db_3 = ((db_2 + 2) / 4) * 4;
+            cuns db_3 = ((db_2 + 2) / 4) * 2;
             cuns db_4 = db_2 - db_3;
 
             A.rafektet(dest, 0, 0, db_1, db_1, true);
@@ -3401,9 +3410,9 @@ public:
             //      \ |        \ |     |   |   | M |
             //       \|         \|     -----   -----
 
-            cuns db_1 = ((dest.get_col() + 2) / 4) * 4;
+            cuns db_1 = ((dest.get_col() + 2) / 4) * 2;
             cuns db_2 = dest.get_col() - db_1;
-            cuns db_3 = ((db_2 + 2) / 4) * 4;
+            cuns db_3 = ((db_2 + 2) / 4) * 2;
             cuns db_4 = db_2 - db_3;
 
             A.rafektet(dest, 0, 0, db_1, db_1, false);

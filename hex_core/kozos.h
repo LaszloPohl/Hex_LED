@@ -32,11 +32,12 @@ typedef double rvt; // real value type
 typedef uns meret_t;
 enum nonlin_tipus { nt_konstans, nt_lin, nt_szakszok, nt_fazisvalto, nt_exp, nt_mizs, nt_diode_1, nt_erno, nt_polinom, nt_jani_1, nt_inv }; // nt_konstans, nt_lin, nt_szakszok, nt_fazisvalto, nt_exp, nt_mizs, nt_diode_1, nt_erno, nt_inv
 enum mezo_tipus { mt_elektromos, mt_termikus, mt_elektrotermikus };
-enum nemlin_megoldo_tipus{ nmt_klasszik_iteracio, nmt_el_th_newton };  // ha két fa van, akkor külön newton, egyébként egyesített newton
+enum nemlin_megoldo_tipus { nmt_klasszik_iteracio, nmt_el_th_newton };  // ha két fa van, akkor külön newton, egyébként egyesített newton
+enum solver_tipus { st_sunred, st_iter };
 enum peremtipus { pt_open, pt_u, pt_t, pt_htc, pt_thtc };
 enum analizis_lepes_tipus { alt_dc, alt_trans, alt_ac };
 enum gerjesztes_tipus { gt_el_none, gt_th_none, gt_U, gt_I, gt_T, gt_P };
-enum eredmeny_tipus { et_c_pontprobe, et_f_pontprobe, et_c_map, et_f_map, et_sum_value };
+enum eredmeny_tipus { et_c_pontprobe, et_f_pontprobe, et_currentprobe, et_c_map, et_f_map, et_sum_value };
 enum mit_ment_tipus { mm_UT, mm_IP, mm_RL };
 enum analizis_beallitas_tipus { abt_I0, abt_max_error, abt_max_iter, abt_del_all_prev, abt_del_all_gerj, abt_del_fa, abt_tamb,
     abt_change_bn, abt_change_bv, abt_change_jn, abt_change_mn, abt_ct }; // abt_del_all_prev: az elõzõ lépésben számolt össze U/T/I/P 0-zása

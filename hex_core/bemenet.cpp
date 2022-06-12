@@ -475,12 +475,15 @@ void adat_szimulacio::beolvas_fajlbol(uns hanyas, adat_szimulacio * elozo, uns c
     enum all { all_alap, all_el, all_th, all_elth };
     all a = all_alap;
     nemlin_tipus = nmt_klasszik_iteracio;
+    solver_type = st_sunred;//st_iter;//
     while ((ch = fajl::get_char_or_eol("simulation field type")) != 0) {
         switch (ch) {
             case '1': nemlin_tipus = nmt_klasszik_iteracio; break;
             case '2': nemlin_tipus = nmt_el_th_newton; break;
             case 'E': a = all_el; break;
             case 'T': a = (a == all_el) ? all_elth : all_th; break;
+            case 'S': solver_type = st_sunred; break;
+            case 'I': solver_type = st_iter; break;
             default:
                 throw hiba(1, "simulation field type format (%c)", ch);
         }
@@ -728,9 +731,31 @@ printf("\n cellatartomany_feltolto cputhreads:%u\n", cputhreads);
             case 'N': is_use_commas = false; fajl::check_text("A"); break;
             default:  throw hiba(1, "unknown analysis start command (%c)", ch);
         }
-        analizis_lepesek.set_size(1 + fajl::get_uns("NA analysis steps number"));
-        for (uns i = 1; i < analizis_lepesek.size(); i++)
-            analizis_lepesek[i].beolvas_fajlbol(i);
+        vektor<adat_analizis_lepes> elo_analizis_lepesek;
+        elo_analizis_lepesek.set_size(1 + fajl::get_uns("NA analysis steps number"));
+        analizis_lepesek.set_size(1);
+        uns plusz_lepes_db = 0;
+        const rvt hibalepes_ido = 1e-10;
+        for (uns i = 1; i < elo_analizis_lepesek.size(); i++) {
+            elo_analizis_lepesek[i].beolvas_fajlbol(i);
+            analizis_lepesek.push_back(elo_analizis_lepesek[i]);
+/*
+            // tranziensnél gerjesztésugráshoz plusz lépés
+            if (i > 1 && elo_analizis_lepesek[i].tipus == alt_trans && elo_analizis_lepesek[i].gerjesztesek.size() > 0) {
+
+                analizis_lepesek.last().value = hibalepes_ido;
+                analizis_lepesek.last().is_ignore_error = true;
+                analizis_lepesek.push_back(elo_analizis_lepesek[i]);
+
+                analizis_lepesek.last().value = hibalepes_ido;
+                analizis_lepesek.last().is_ignore_error = true;
+                analizis_lepesek.push_back(elo_analizis_lepesek[i]);
+
+                analizis_lepesek.last().value -= 2*hibalepes_ido;
+                analizis_lepesek.last().gerjesztesek.clear();
+            }
+*/
+        }
     }
 
     // ES
@@ -818,7 +843,7 @@ void adat_szimulacio::fa_rekurziv_klasztertartomany_feltolto(uns kezdoindex, vek
     }
     if (fa_elemek[kezdoindex].cella_index != 0)
         throw hiba(1, "unballanced tree");
-    uns alszal = (szal_kell + 1) / 2; // így a megengedettnél több szálra bonthatja, de kiegyensúlyozottabb
+    uns alszal = (szal_kell + 1) / 2; // így a megengedettnél több szálra bonthatja, de kiegyensúlyozottabb => 2021.03.15.: 32 szál lesz 10 helyett. Ez jó?
     fa_rekurziv_klasztertartomany_feltolto(fa_elemek[kezdoindex].bal_elem_indexe, klaszter_tartomanyok, egyedi_fa_elemek, alszal); // szal_kell - szal_kell / 2
     fa_rekurziv_klasztertartomany_feltolto(fa_elemek[kezdoindex].jobb_elem_indexe, klaszter_tartomanyok, egyedi_fa_elemek, alszal); // szal_kell / 2
     egyedi_fa_elemek.push_back(adat_egyedi{ kezdoindex, szal_kell });
@@ -1284,6 +1309,19 @@ void adat_analizis_lepes::beolvas_fajlbol(uns hanyas){
                                 break;
                             default:  throw hiba(1, "unknown analysis RP data type (RP%c)", ch);
                         }
+                        break;
+                    case 'C':
+                        eredm.tipus = et_currentprobe;
+                        eredm.mit_ment = mm_IP;
+                        eredm.currentProbe.set_size(fajl::get_uns("analysis RC face number"));
+                        fajl::check_text(";", "analysis RC face number");
+                        for (uns i = 0; i < eredm.currentProbe.size(); i++) {
+                            eredm.currentProbe[i].cella_index = fajl::get_uns("analysis RC cell index");
+                            fajl::check_text("F", "analysis RC cell and index separator");
+                            eredm.currentProbe[i].face_index = fajl::get_uns("analysis RC face index");
+                            fajl::check_text(";", "analysis RC face index");
+                        }
+                        eredmenyek.push_back(eredm);
                         break;
                     case 'M':
                         ch = fajl::get_char("analysis RP where type (C/F)");

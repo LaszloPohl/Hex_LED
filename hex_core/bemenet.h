@@ -139,7 +139,7 @@ class multi_domain_LED_model {
         if (IF <= 0)
             throw hiba("multi_domain_LED_model::calc_VF_type_1", "IF <= 0 (%g)", IF);
         IF = abs(IF);
-        double V_dioda = me * VT * (log(IF / I0e) + 1);
+        double V_dioda = me * VT * log(IF / I0e + 1);
         double dVF_el = (ael * IF * IF + bel * IF + cel) * (Tj * Tj - Tref * Tref) +
             (del * IF * IF + eel * IF + fel) * (Tj - Tref);
         double V_R = Rse * IF;
@@ -147,11 +147,31 @@ class multi_domain_LED_model {
         return dVF_el + V_dioda + V_R;
     }
     //***********************************************************************
+    double calc_VF_type_1_print(double IF, double Tj, double & VF_rad) const {
+    //***********************************************************************
+        if (IF <= 0)
+            throw hiba("multi_domain_LED_model::calc_VF_type_1", "IF <= 0 (%g)", IF);
+        IF = abs(IF);
+        double V_dioda = me * VT * log(IF / I0e + 1);
+        double dVF_el = (ael * IF * IF + bel * IF + cel) * (Tj * Tj - Tref * Tref) +
+            (del * IF * IF + eel * IF + fel) * (Tj - Tref);
+        double V_R = Rse * IF;
+        VF_rad = V_dioda + dVF_el;
+        static int db = 1000;
+        db--;
+        if (db == 0) {
+            printf("VR=%g, Vd=%g, dV=%g, IF=%g\n", V_R, V_dioda, dVF_el, IF);
+            printf("me=%g, VT=%g, I0e=%g, IF=%g\n", me, VT, I0e, IF);
+            db = 1000;
+        }
+        return dVF_el + V_dioda + V_R;
+    }
+    //***********************************************************************
     double calc_VF_rad_type_1(double IF_rad, double Tj, double & V_rad) const {
     //***********************************************************************
         if (IF_rad <= 0)
             throw hiba("multi_domain_LED_model::calc_VF_rad_type_1", "IF_rad <= 0 (%g)", IF_rad);
-        double Vrad_dioda = mrad * VT * (log(IF_rad / I0rad) + 1);
+        double Vrad_dioda = mrad * VT * log(IF_rad / I0rad + 1);
         double dVF_rad = (arad * IF_rad * IF_rad + brad * IF_rad + crad) * (Tj * Tj - Tref * Tref) +
             (drad * IF_rad * IF_rad + erad * IF_rad + frad) * (Tj - Tref);
         double V_R = Rrrad * IF_rad;
@@ -163,7 +183,7 @@ class multi_domain_LED_model {
     //***********************************************************************
         if (IF_prev <= 0)
             throw hiba("multi_domain_LED_model::iterate_IF_type_1", "IF_prev <= 0 (%g)", IF_prev);
-        double V_dioda = me * VT * (log(IF_prev / I0e) + 1);
+        double V_dioda = me * VT * log(IF_prev / I0e + 1);
         double dVF_el = (ael * IF_prev * IF_prev + bel * IF_prev + cel) * (Tj * Tj - Tref * Tref) +
             (del * IF_prev * IF_prev + eel * IF_prev + fel) * (Tj - Tref);
         double IF = (VF - V_dioda - dVF_el) / Rse;
@@ -175,7 +195,7 @@ class multi_domain_LED_model {
     //***********************************************************************
         if (IF_rad_prev <= 0)
             throw hiba("multi_domain_LED_model::iterate_I_rad_type_1", "IF_rad_prev <= 0 (%g)", IF_rad_prev);
-        double Vrad_dioda = mrad * VT * (log(IF_rad_prev / I0rad) + 1);
+        double Vrad_dioda = mrad * VT * log(IF_rad_prev / I0rad + 1);
         double dVF_rad = (arad * IF_rad_prev * IF_rad_prev + brad * IF_rad_prev + crad) * (Tj * Tj - Tref * Tref) +
             (drad * IF_rad_prev * IF_rad_prev + erad * IF_rad_prev + frad) * (Tj - Tref);
         return (VF_rad - Vrad_dioda - dVF_rad) / Rrrad;
@@ -248,6 +268,7 @@ class multi_domain_LED_model {
                 throw hiba("calc_IF_type_1", "VF_calc = %g, VF = %g, IF_prev = %g\n", VF_calc, VF, IF_prev);
             }
         }
+        //calc_VF_type_1_print(IF_prev, Tj, VF_rad_calc); // csak a kiírás miatt
         VF_rad = VF_rad_calc;
         return IF_prev;
     }
@@ -273,7 +294,7 @@ class multi_domain_LED_model {
                         I1 = I2;
                     else throw hiba("Calc_I_rad_felezve", "divergent");
                     it_num++;
-                    if (it_num > 1000) {
+                    if (it_num > 100000) {
                         throw hiba("Calc_I_rad_felezve", "iter 1: I1 = %g, I2 = %g, y1 = %g, y2 = %g\n", I1, I2, y1, y2);
                     }
                 } while (true);
@@ -293,7 +314,7 @@ class multi_domain_LED_model {
                     y2 = y3;
                 }
                 it_num++;
-                if (it_num > 1000) {
+                if (it_num > 100000) {
                     throw hiba("Calc_I_rad_felezve", "iter 2: I1 = %g, I2 = %g, I3= %g, y1 = %g, y2 = %g, y3=%g\n", I1, I2, I3, y1, y2, y3);
                 }
             } while (abs(y3) > 1e-9);
@@ -316,7 +337,7 @@ class multi_domain_LED_model {
             else IF_rad_prev = uj_IF_rad_prev;
             VF_rad_calc = calc_VF_rad_type_1(IF_rad_prev, Tj, V_rad_calc);
             it_num++;
-            if (it_num > 1000) {
+            if (it_num > 10000000) {
                 throw hiba("calc_I_rad_type_1", "VF_rad_calc = %g, VF_rad = %g, IF_rad_prev = %g\n", VF_rad_calc, VF_rad, IF_rad_prev);
             }
         }
@@ -343,6 +364,40 @@ class multi_domain_LED_model {
     }
 
 public:
+    //***********************************************************************
+    multi_domain_LED_model() {
+    //***********************************************************************
+        Tref = 70;
+        VT = calc_VT(Tref);
+        I0e = 7.32187956118988e-19;
+        me = 2.29275643623816;//2.275;//
+        Rse = 1.532;//1.25;//
+        I0rad = 4.29260164799285e-23;
+        mrad = 1.83561771204239;
+        Rrrad = 0.899;
+        ael = -4.20320084575734e-05;
+        bel = 4.69533080515079e-05;
+        cel = 8.3781624233249e-07;
+        del = 0.0100986814367841;
+        eel = -0.0125056006514783;
+        fel = -0.00107358797611507;
+        arad = 0.000038198290216593;
+        brad = 0.0000225698585460935;
+        crad = 2.86052740648461e-06;
+        drad = -0.0122727605875887;
+        erad = -0.00747414076628783;
+        frad = -0.00132565719838538;
+        akap = 0;
+        bkap = 0;
+        ckap = 0;
+        dkap = 0;
+        ekap = 0;
+        fkap = 0;
+        gkap = 0;
+        hkap = 0;
+        ikap = 1000;
+    }
+/*
     //***********************************************************************
     multi_domain_LED_model() {
     //***********************************************************************
@@ -376,6 +431,7 @@ public:
         hkap = 0.299603441;
         ikap = 35.0516427;
     }
+*/
     //***********************************************************************
     // A junction feszültsége alapján számolja ki a visszaadott értékeket
     void calc_el_from_U(double VF, double Tj, double start_I, LED_model_result_pack & ret) const {
@@ -1079,10 +1135,16 @@ struct adat_gerj {
 //***********************************************************************
 struct adat_eredm {
 //***********************************************************************
-    eredmeny_tipus tipus; // et_c_pontprobe, et_f_pontprobe, et_c_map, et_f_map
+    struct CurrIndex {
+        uns cella_index;
+        uns face_index;
+        CurrIndex(uns ci = 0, uns fi = 0) :cella_index{ ci }, face_index{ fi }{}
+    };
+    eredmeny_tipus tipus; // et_c_pontprobe, et_f_pontprobe, et_currentprobe, et_c_map, et_f_map
     mit_ment_tipus mit_ment; // mm_UT, MM_IP, mm_lum, mm_rad
     uns cella_index; // pontprobe esetén a cella indexe
     uns face_index; // pontprobe és face esetén a face indexe
+    vektor<CurrIndex> currentProbe; // faces of the current probe if this is a current probe
     adat_eredm() :cella_index{ 0 }, face_index{ 0 } {}
 };
 
@@ -1125,11 +1187,12 @@ struct adat_analizis_lepes {
     vektor<adat_gerj> gerjesztesek;         // adat_gerj vektor, a 0 indexû is érvényes!
     vektor<adat_anal_beall> beallitasok;    // adat_anal_beall vektor, a 0 indexû is érvényes!
     vektor<adat_eredm> eredmenyek;          // adat_eredme vektor, a 0 indexû is érvényes!
+    bool is_ignore_error;                   // bool, hagyja jóvá a lépést a vezérlõ akkor is, ha hiba van
 
     //***********************************************************************
     void beolvas_fajlbol(uns hanyas);
     //***********************************************************************
-    adat_analizis_lepes() :value{ rvt() } {}
+    adat_analizis_lepes() :value{ rvt() }, is_ignore_error{ false } {}
     //***********************************************************************
     void set_Tamb(rvt Tamb) {
     //***********************************************************************
@@ -1405,6 +1468,7 @@ struct adat_szimulacio {
     ::std::string eredm_utvonal;                    // ide menti az eredményeket
     mezo_tipus mezo;                                // mt_elektromos, mt_termikus, mt_elektrotermikus
     nemlin_megoldo_tipus nemlin_tipus;              // nmt_klasszik_iteracio, nmt_el_th_newton
+    solver_tipus solver_type;                       // st_sunred, st_iter
     vektor<adat_anyag> anyagok;                     // adat_anyag vektor, a 0 indexû dummy
     vektor<adat_struktura> strukturak;              // adat_struktura vektor, a 0 indexû dummy
     vektor<adat_junction> junctionok;               // adat_junction vektor, a 0 indexû dummy
@@ -1473,6 +1537,15 @@ struct bemenet{
             szimulaciok[i].set_Tamb(Tamb);
         }
     }
+};
+
+
+//***********************************************************************
+struct iter_csomopont {
+//***********************************************************************
+    uns cella_1_index, cella_2_index;
+    uns cella_1_sajat, cella_2_sajat; // Az admittanciamátrix mely sora (=soron belül mely érték)
+    iter_csomopont() :cella_1_index{ 0 }, cella_2_index{ 0 }, cella_1_sajat{ 0 }, cella_2_sajat{ 0 } {}
 };
 
 

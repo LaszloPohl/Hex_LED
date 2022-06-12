@@ -26,6 +26,7 @@ void kiir_akt_lepes(){
 int main(int n, const char ** params) {
     // printf("%u, %u\n", (uns)sizeof(light_path_blue_t::cella), (uns)sizeof(light_path_yellow_t::cella));
     // return 0;
+    time(&prog_start_time);
     try {
 /*
         multi_domain_LED_model mod;
